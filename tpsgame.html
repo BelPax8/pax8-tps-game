@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en-US"> 
+<head>
+  <meta charset="UTF-8" />
+  <title>The SE Pax8 Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #f4f4f4;
+    }
+    #playerForm {
+      margin-top: 20px;
+      padding: 10px;
+    }
+    #hud {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      background: #333;
+      color: white;
+      padding: 10px;
+      width: 100%;
+      max-width: 1000px;
+      box-sizing: border-box;
+      flex-wrap: wrap;
+    }
+    #hud .group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #hud button, #hud select {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    #hud select {
+      background: #555;
+    }
+    #hud button:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+    #gameArea {
+      width: 100%;
+      max-width: 1000px;
+      height: 560px;
+      background: white;
+      border: 2px solid #333;
+      position: relative;
+      overflow: hidden;
+    }
+    .target {
+      width: 90px;
+      height: 90px;
+      position: absolute;
+      cursor: pointer;
+      border-radius: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-weight: bold;
+      font-size: 11px;
+      text-align: center;
+      padding: 6px;
+      box-sizing: border-box;
+      user-select: none;
+    }
+    /* Time bar */
+    .timebar-wrap {
+      flex: 1;
+      height: 10px;
+      background: #555;
+      border-radius: 6px;
+      overflow: hidden;
+      min-width: 200px;
+    }
+    #timeBar {
+      height: 100%;
+      width: 100%;
+      background: #4CAF50;
+      transition: width 0.25s linear;
+    }
+    /* Leaderboard modal */
+    #modalOverlay {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    #modalContent {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      width: 380px;
+      max-height: 70vh;
+      overflow-y: auto;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      animation: pop 0.25s ease-out;
+    }
+    #modalContent h3 { margin-top: 0; }
+    @keyframes pop {
+      from { transform: scale(0.9); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 12px;
+    }
+    .btn {
+      background: #333;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .btn.primary { background: #4CAF50; }
+    /* Highlight current player */
+    .highlight {
+      color: #e63946;       /* red */
+      font-weight: bold;
+    }
+    .highlight::after {
+      content: " (you)";
+      font-size: 0.9em;
+      font-style: italic;
+      margin-left: 4px;
+    }
+    /* Persistent Leaderboard */
+    #ranking {
+      margin-top: 20px;
+      background: #fff;
+      border: 2px solid #333;
+      padding: 10px;
+      width: 100%;
+      max-width: 1000px;
+      box-sizing: border-box;
+    }
+    /* Tiny badge for combo */
+    #comboBadge {
+      background: #222;
+      border: 1px solid #666;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+    /* Mute indicator */
+    #muteBtn.muted { background: #888 !important; }
+
+    /* Intro / Instructions modal */
+    #introOverlay {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.6);
+      display: none;              /* shown via JS */
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    #introContent {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      width: 520px;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      animation: pop 0.25s ease-out;
+    }
+    #introContent h2 { margin: 0 0 8px; }
+    #introContent ul { margin: 10px 0 0 18px; }
+    #introContent li { margin: 6px 0; }
+    #introActions {
+      display: flex;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 14px;
+    }
+    #introStartBtn {
+      background: #4CAF50;
+      color: #fff;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Intro / Instructions -->
+  <div id="introOverlay">
+    <div id="introContent">
+      <h2>How to Play</h2>
+      <p>
+        The goal is to learn, in a playful way, which vendors the TPS team
+        <strong>supports with demos and onboarding</strong> (vendor supported) and which ones are not covered.
+      </p>
+
+      <h3>Objective</h3>
+      <ul>
+        <li>Click the product tiles that are <strong>demo/onboarding supported</strong>.</li>
+        <li>Avoid clicking products that are <strong>not</strong> supported.</li>
+      </ul>
+
+      <h3>Scoring</h3>
+      <ul>
+        <li><strong>+10 pts</strong> for a supported vendor (correct click).</li>
+        <li><strong>-5 pts</strong> for a non-supported vendor (wrong click).</li>
+        <li><strong>-1 pt</strong> for clicking empty space (miss).</li>
+      </ul>
+
+      <h3>Combo / Streak</h3>
+      <ul>
+        <li>Every 5 consecutive correct hits increases a <strong>combo</strong> (+25% per step).</li>
+        <li>Missing or a wrong click resets the streak.</li>
+      </ul>
+
+      <h3>Difficulty</h3>
+      <ul>
+        <li><strong>Easy</strong>: more time, slower spawn, targets stay longer.</li>
+        <li><strong>Normal</strong>: default settings.</li>
+        <li><strong>Hard</strong>: less time, faster spawn, shorter target life, and a <strong>1.5× score multiplier</strong> on correct hits.</li>
+      </ul>
+
+      <h3>Timer & Sounds</h3>
+      <ul>
+        <li>The green bar shows time remaining.</li>
+        <li>Toggle sound with the <strong>🔊 button</strong> or press <strong>M</strong>.</li>
+      </ul>
+
+      <h3>Leaderboard</h3>
+      <ul>
+        <li>Scores are saved locally (this browser) and shown after each round.</li>
+        <li>The last player is highlighted in red with “(you)”.</li>
+      </ul>
+
+      <div id="introActions">
+        <label><input type="checkbox" id="introDontShow"> Don’t show this again</label>
+        <button id="introStartBtn">Got it — let’s play</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Player form -->
+  <div id="playerForm">
+    <label>Your Name:</label>
+    <input type="text" id="playerName" placeholder="Type your name" />
+    <button id="saveNameBtn">OK</button>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div class="group"><strong>Points:</strong> <span id="score">0</span></div>
+    <div class="group"><strong>Time:</strong> <span id="time">45</span>s</div>
+    <div class="timebar-wrap"><div id="timeBar"></div></div>
+    <div class="group">
+      <label for="difficulty"><strong>Difficulty:</strong></label>
+      <select id="difficulty">
+        <option value="easy">Easy</option>
+        <option value="normal" selected>Normal</option>
+        <option value="hard">Hard</option>
+      </select>
+    </div>
+    <div class="group"><span id="comboBadge">Streak: 0 | Combo: x1.00</span></div>
+    <div class="group">
+      <button id="muteBtn" title="Toggle sound (M)">🔊 Sound</button>
+      <button id="startBtn">Start Game</button>
+    </div>
+  </div>
+
+  <!-- Game area -->
+  <div id="gameArea"></div>
+
+  <!-- Audio -->
+  <audio id="sndHit"  src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c7c2b1.mp3?filename=click-124467.mp3"></audio>
+  <audio id="sndMiss" src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_6db2aa.mp3?filename=error-126627.mp3"></audio>
+
+  <!-- Modal (Leaderboard) -->
+  <div id="modalOverlay">
+    <div id="modalContent">
+      <h3>🏆 Leaderboard</h3>
+      <ol id="rankingList"></ol>
+      <div class="modal-actions">
+        <button id="playAgainBtn" class="btn primary">Play again</button>
+        <button id="closeModal" class="btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Persistent Leaderboard -->
+  <div id="ranking">
+    <h3>Leaderboard (history)</h3>
+    <ol id="rankingListPersist"></ol>
+  </div>
+
+  <script>
+    // === Products (full list) ===
+    const rawProducts = [
+      // NO
+      { name: "Zero Networks", demo: false }, { name: "Work 365", demo: false },
+      { name: "Webroot (by opentext) - SAT", demo: false },
+      { name: "Webroot (by opentext) - Endpointprotection", demo: false },
+      { name: "Webroot (by opentext) - DNS Filter", demo: false },
+      { name: "VirtlX", demo: false }, { name: "Vicarius", demo: false },
+      { name: "Usecure", demo: false }, { name: "TruGrid", demo: false },
+      { name: "TrendMicro - SAT", demo: false },
+      { name: "TrendMicro - Endpointprotection", demo: false },
+      { name: "TrendMicro - Emailsecurity", demo: false },
+      { name: "Splashtop", demo: false }, { name: "Sectigo", demo: false },
+      { name: "Rewst", demo: false }, { name: "Revscale", demo: false },
+      { name: "Red Sift", demo: false }, { name: "Probax", demo: false },
+      { name: "Pillr Pen Testing by opentext", demo: false },
+      { name: "Perception Point", demo: false }, { name: "NordStellar", demo: false },
+      { name: "Netwrix", demo: false }, { name: "Nerdio", demo: false },
+      { name: "N-Able", demo: false }, { name: "MSPCFO", demo: false },
+      { name: "MSPbots", demo: false }, { name: "Microsoft Intune", demo: false },
+      { name: "Microsoft Entra", demo: false }, { name: "Mailguard365", demo: false },
+      { name: "Liongard", demo: false }, { name: "Kalibr8", demo: false },
+      { name: "ITagree", demo: false }, { name: "Hacware", demo: false },
+      { name: "Guardz", demo: false }, { name: "GoTo", demo: false },
+      { name: "Foxit", demo: false }, { name: "Exium (NETGEAR)", demo: false },
+      { name: "ElectroNeek - RPA", demo: false }, { name: "Egnyte", demo: false },
+      { name: "EasyDMARC", demo: false }, { name: "Devicie", demo: false },
+      { name: "DefenseX", demo: false }, { name: "Cyrisma", demo: false },
+      { name: "CyberQP", demo: false }, { name: "Cyber Fox", demo: false },
+      { name: "Connectwise Screen Connect", demo: false },
+      { name: "ConnectWise Migration O365 (Skykick)", demo: false },
+      { name: "Connectwise MDR", demo: false },
+      { name: "ConnectWise - SAAS Backup (SKykick)", demo: false },
+      { name: "ConnectWise Endpoint Management and Security for M365 (Skykick Cloud Manager)", demo: false },
+      { name: "Commvault-SAAS BU", demo: false }, { name: "Commvault-Machine BU", demo: false },
+      { name: "CloudRadial", demo: false }, { name: "Check Point Mobile", demo: false },
+      { name: "Check Point MDR", demo: false }, { name: "Check Point Harmony Browse", demo: false },
+      { name: "Call2Teams", demo: false }, { name: "Bvoip", demo: false },
+      { name: "BreachSecureNow", demo: false }, { name: "BitTitan", demo: false },
+      { name: "Bigin (Zoho)", demo: false }, { name: "Axcient -Sync", demo: false },
+      { name: "Airslate", demo: false }, { name: "Actifile", demo: false },
+      { name: "1Password", demo: false }, { name: "Traceless", demo: false },
+      { name: "Timus Networks", demo: false }, { name: "Threatmate", demo: false },
+      { name: "Solgari", demo: false }, { name: "Salesbuildr", demo: false },
+      { name: "Produce8", demo: false }, { name: "Officeatwork", demo: false },
+      { name: "Novacoast", demo: false }, { name: "MontyCloud", demo: false },
+      { name: "Microsoft Defender", demo: false }, { name: "Google Chrome OS", demo: false },
+      { name: "CyberCert", demo: false }, { name: "Cloud Contracts 365", demo: false },
+      { name: "Avepoint", demo: false }, { name: "Augmentt", demo: false },
+
+      // YES
+      { name: "Watchguard - ThreatSync&NDR", demo: true },
+      { name: "Watchguard - Firewall", demo: true },
+      { name: "Watchguard - Endpointprotection", demo: true },
+      { name: "Watchguard - AuthPoit", demo: true },
+      { name: "Wasabi", demo: true }, { name: "Valimail", demo: true },
+      { name: "Vade", demo: true }, { name: "Todyl", demo: true },
+      { name: "ThreatDown (Malwarebytes)", demo: true }, { name: "Superops", demo: true },
+      { name: "Sophos_-Endpointsecurity", demo: true },
+      { name: "Sophos - ZTNA/Firewalls", demo: true }, { name: "Sophos - Mobile", demo: true },
+      { name: "Sophos - Emailsecurity/SAT", demo: true }, { name: "SentinelOne", demo: true },
+      { name: "Redstor - SAAS Backup (CyberSentriq)", demo: true },
+      { name: "Redstor - Machine Backup (CyberSentriq)", demo: true },
+      { name: "Proofpoint - SAT", demo: true }, { name: "Printix", demo: true },
+      { name: "Pillr Platform by opentext", demo: true },
+      { name: "Perimeter81 (Harmony SASE)(Check Point)", demo: true },
+      { name: "NordPass", demo: true }, { name: "NordLayer", demo: true },
+      { name: "LastPass", demo: true }, { name: "Keeper", demo: true },
+      { name: "Ironscales - SAT", demo: true }, { name: "Ironscales - Emailsecurity", demo: true },
+      { name: "Exclaimer", demo: true }, { name: "Dropsuite - SAAS Backup", demo: true },
+      { name: "Domotz", demo: true }, { name: "DNSFilter", demo: true },
+      { name: "Cynomi", demo: true }, { name: "Crowdstrike", demo: true },
+      { name: "Crewhu", demo: true }, { name: "ConnectSecure", demo: true },
+      { name: "Check Point HEC", demo: true }, { name: "Check Point Harmony SASE", demo: true },
+      { name: "Check Point EndPoint", demo: true }, { name: "BlackPointCyber", demo: true },
+      { name: "Bitdefender - Endpointprotection", demo: true },
+      { name: "Bitdefender - Emailsecurity", demo: true },
+      { name: "Axcient X360 - SAAS Backup", demo: true },
+      { name: "Axcient X360 - Machine Back UP", demo: true },
+      { name: "Avanan (CheckPoint) pls use Check Point Infinity HEC", demo: true },
+      { name: "Auvik", demo: true }, { name: "Adobe", demo: true },
+      { name: "Addigy", demo: true }, { name: "Acronis - SAT", demo: true },
+      { name: "Acronis - SAAS Backup", demo: true }, { name: "Acronis - Machine Back up", demo: true },
+      { name: "Acronis - File Share", demo: true },
+      { name: "Acronis - Endpointprotection", demo: true },
+      { name: "Acronis - Emailsecurity", demo: true }
+    ];
+
+    // Color palette (cyclic)
+    const colors = [
+      "#FF6B6B", "#FFD93D", "#6BCB77", "#4D96FF",
+      "#FF8C42", "#9B5DE5", "#00BBF9", "#F15BB5",
+      "#FFADAD", "#FEE440", "#8AC926", "#1982C4",
+      "#80ED99", "#B8B8FF", "#FFC6FF", "#A0C4FF"
+    ];
+
+    // Distribute colors cyclically (no hint if demo or not)
+    const products = rawProducts.map((p, i) => ({
+      ...p,
+      color: colors[i % colors.length]
+    }));
+
+    // Difficulty (includes scoring multiplier on hard)
+    function getDifficultyParams() {
+      const d = document.getElementById("difficulty").value;
+      if (d === "easy")   return { duration: 5000, spawn: 1100, time: 60, scoreMult: 1.00 };
+      if (d === "hard")   return { duration: 2600, spawn: 700,  time: 35, scoreMult: 1.50 };
+      return               { duration: 3500, spawn: 900,  time: 45, scoreMult: 1.00 }; // normal
+    }
+    let DIFF = getDifficultyParams();
+
+    // Game state
+    let playerName = "";
+    let score = 0;
+    let timeLeft = DIFF.time;
+    let gameInterval;
+    let timerInterval;
+    let ranking = []; // {name, points, last}
+    let streak = 0;
+
+    // Elements
+    const startBtn = document.getElementById("startBtn");
+    const scoreDisplay = document.getElementById("score");
+    const timeDisplay = document.getElementById("time");
+    const timeBar = document.getElementById("timeBar");
+    const gameArea = document.getElementById("gameArea");
+    const modalOverlay = document.getElementById("modalOverlay");
+    const rankingList = document.getElementById("rankingList");
+    const rankingListPersist = document.getElementById("rankingListPersist");
+    const closeModal = document.getElementById("closeModal");
+    const playAgainBtn = document.getElementById("playAgainBtn");
+    const muteBtn = document.getElementById("muteBtn");
+    const comboBadge = document.getElementById("comboBadge");
+
+    // Intro elements
+    const introOverlay   = document.getElementById("introOverlay");
+    const introStartBtn  = document.getElementById("introStartBtn");
+    const introDontShow  = document.getElementById("introDontShow");
+
+    // Sound helpers
+    let muted = false;
+    function play(soundId) {
+      if (muted) return;
+      const el = document.getElementById(soundId);
+      if (!el) return;
+      el.currentTime = 0;
+      el.volume = 0.25;
+      el.play().catch(()=>{});
+    }
+    muteBtn.addEventListener("click", ()=>{
+      muted = !muted;
+      muteBtn.classList.toggle("muted", muted);
+      muteBtn.textContent = muted ? "🔇 Muted" : "🔊 Sound";
+    });
+    document.addEventListener("keydown",(e)=>{
+      if (e.key.toLowerCase()==="m") muteBtn.click();
+    });
+
+    // Persistence
+    const LS_KEY = "se_pax8_game_ranking";
+    function loadRanking() {
+      try { const raw = localStorage.getItem(LS_KEY); return raw ? JSON.parse(raw) : []; }
+      catch { return []; }
+    }
+    function saveRanking() {
+      try { localStorage.setItem(LS_KEY, JSON.stringify(ranking)); }
+      catch {}
+    }
+
+    // Load persisted ranking on boot
+    ranking = loadRanking();
+    renderRankingLists();
+
+    // Show intro on first load unless user opted out
+    (function showIntroOnLoad() {
+      try {
+        const hide = localStorage.getItem("se_pax8_game_hideIntro") === "1";
+        if (!hide) introOverlay.style.display = "flex";
+      } catch {
+        introOverlay.style.display = "flex";
+      }
+    })();
+    introStartBtn.addEventListener("click", () => {
+      if (introDontShow.checked) {
+        try { localStorage.setItem("se_pax8_game_hideIntro", "1"); } catch {}
+      }
+      introOverlay.style.display = "none";
+    });
+    document.addEventListener("keydown", (e) => {
+      if (introOverlay.style.display === "flex" && e.key === "Escape") {
+        introOverlay.style.display = "none";
+      }
+    });
+
+    // Name capture
+    document.getElementById("saveNameBtn").addEventListener("click", () => {
+      playerName = document.getElementById("playerName").value.trim();
+      if (playerName) {
+        document.getElementById("playerForm").style.display = "none";
+        document.getElementById("hud").style.display = "flex";
+      } else {
+        alert("Please type your name to play!");
+      }
+    });
+
+    // Controls
+    startBtn.addEventListener("click", startGame);
+    closeModal.addEventListener("click", () => modalOverlay.style.display = "none");
+    playAgainBtn.addEventListener("click", () => { modalOverlay.style.display = "none"; startGame(); });
+
+    // Start round
+    function startGame() {
+      DIFF = getDifficultyParams();
+      score = 0;
+      streak = 0;
+      updateComboBadge();
+      timeLeft = DIFF.time;
+      timeDisplay.textContent = timeLeft;
+      timeBar.style.width = "100%";
+      scoreDisplay.textContent = score;
+      startBtn.disabled = true;
+      gameArea.innerHTML = "";
+
+      clearInterval(gameInterval);
+      clearInterval(timerInterval);
+      gameInterval = setInterval(spawnTarget, DIFF.spawn);
+      timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    // Timer
+    function updateTimer() {
+      timeLeft--;
+      timeDisplay.textContent = timeLeft;
+      const pct = Math.max(0, (timeLeft / DIFF.time) * 100);
+      timeBar.style.width = pct + "%";
+      if (timeLeft <= 0) endGame();
+    }
+
+    // Empty click penalty (-1)
+    gameArea.addEventListener("click", (e) => {
+      if (e.target !== gameArea) return; // clicked a target, ignore here
+      score -= 1;
+      scoreDisplay.textContent = score;
+      play("sndMiss");
+      showClickFx(e);
+    });
+
+    function showClickFx(e) {
+      const rect = gameArea.getBoundingClientRect();
+      const fx = document.createElement("div");
+      fx.style.position = "absolute";
+      fx.style.left = (e.clientX - rect.left) + "px";
+      fx.style.top  = (e.clientY - rect.top)  + "px";
+      fx.style.transform = "translate(-10px, -20px)";
+      fx.style.pointerEvents = "none";
+      fx.style.color = "#ff5252";
+      fx.style.fontWeight = "bold";
+      fx.style.textShadow = "0 1px 2px rgba(0,0,0,0.4)";
+      fx.textContent = "-1";
+      gameArea.appendChild(fx);
+      setTimeout(()=>fx.remove(), 600);
+    }
+
+    // Spawn targets (static)
+    function spawnTarget() {
+      const product = products[Math.floor(Math.random() * products.length)];
+      const target = document.createElement("div");
+      target.className = "target";
+      target.style.backgroundColor = product.color;
+      target.textContent = product.name;
+
+      // random position
+      target.style.left = Math.random() * (gameArea.clientWidth - 90) + "px";
+      target.style.top  = Math.random() * (gameArea.clientHeight - 90) + "px";
+
+      // click scoring with combo/streak + difficulty multiplier on hits
+      target.addEventListener("click", (ev) => {
+        const base = product.demo ? 10 : -5;
+        if (product.demo) {
+          streak++;
+          play("sndHit");
+        } else {
+          streak = 0;
+          play("sndMiss");
+        }
+        const combo = 1 + Math.floor(streak / 5) * 0.25;  // +25% every 5 hits
+        const mult  = product.demo ? (combo * DIFF.scoreMult) : 1; // only hits get diff mult
+        const points = Math.round(base * mult);
+
+        score += points;
+        scoreDisplay.textContent = score;
+        flashPoints(target, points, product.demo, combo, DIFF.scoreMult);
+        updateComboBadge(product.demo ? combo * DIFF.scoreMult : 1);
+
+        target.remove();
+        ev.stopPropagation(); // prevent empty-click penalty
+      });
+
+      gameArea.appendChild(target);
+      setTimeout(() => target.remove(), DIFF.duration);
+    }
+
+    function updateComboBadge(effCombo = 1) {
+      const shown = Math.max(1, effCombo);
+      comboBadge.textContent = `Streak: ${streak} | Combo: x${shown.toFixed(2)}`;
+    }
+
+    // Floating points feedback
+    function flashPoints(target, points, isHit, combo, diffMult) {
+      const fx = document.createElement("div");
+      fx.style.position = "absolute";
+      fx.style.left = target.style.left;
+      fx.style.top  = target.style.top;
+      fx.style.transform = "translate(12px,-12px)";
+      fx.style.pointerEvents = "none";
+      fx.style.color = isHit ? "#00e676" : "#ff5252";
+      fx.style.fontWeight = "bold";
+      fx.style.textShadow = "0 1px 2px rgba(0,0,0,0.4)";
+      const extra = (isHit && (combo > 1 || diffMult > 1)) ? ` x${(combo*diffMult).toFixed(2)}` : "";
+      fx.textContent = `${points > 0 ? "+" : ""}${points}${extra}`;
+      gameArea.appendChild(fx);
+      setTimeout(()=>fx.remove(), 800);
+    }
+
+    // End of round
+    function endGame() {
+      clearInterval(gameInterval);
+      clearInterval(timerInterval);
+      startBtn.disabled = false;
+
+      // mark only current player as "last"
+      ranking.forEach(r => r.last = false);
+      ranking.push({ name: playerName, points: score, last: true });
+      ranking.sort((a, b) => b.points - a.points);
+
+      saveRanking();
+      renderRankingLists();
+
+      modalOverlay.style.display = "flex";
+    }
+
+    // Render both lists (modal + persistent)
+    function renderRankingLists() {
+      updateRanking(rankingList);
+      updateRanking(rankingListPersist);
+    }
+
+    // Render a leaderboard <ol>
+    function updateRanking(listEl) {
+      listEl.innerHTML = "";
+      ranking.forEach(r => {
+        const li = document.createElement("li");
+        li.textContent = `${r.name} - ${r.points} pts`;
+        if (r.last) li.classList.add("highlight");
+        listEl.appendChild(li);
+      });
+    }
+  </script>
+</body>
+</html>
