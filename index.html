@@ -460,6 +460,7 @@ preloadLogos(products);
     let timerInterval;
     let ranking = []; // {name, points, last}
     let streak = 0;
+    let isPlaying = false;
 
     // Elements
     const startBtn = document.getElementById("startBtn");
@@ -564,6 +565,8 @@ preloadLogos(products);
       startBtn.disabled = true;
       gameArea.innerHTML = "";
 
+      isPlaying = true;
+
       clearInterval(gameInterval);
       clearInterval(timerInterval);
       gameInterval = setInterval(spawnTarget, DIFF.spawn);
@@ -581,12 +584,13 @@ preloadLogos(products);
 
     // Empty click penalty (-1)
     gameArea.addEventListener("click", (e) => {
-      if (e.target !== gameArea) return; // clicked a target, ignore here
-      score -= 1;
-      scoreDisplay.textContent = score;
-      play("sndMiss");
-      showClickFx(e);
-    });
+  if (!isPlaying) return;            // <— evita penalizar antes/depois do jogo
+  if (e.target !== gameArea) return; // clicou num alvo, ignora aqui
+  score -= 1;
+  scoreDisplay.textContent = score;
+  play("sndMiss");
+  showClickFx(e);
+});
 
     function showClickFx(e) {
       const rect = gameArea.getBoundingClientRect();
@@ -674,6 +678,7 @@ function spawnTarget() {
     }
     // End of round
     function endGame() {
+      isPlaying = false;
       clearInterval(gameInterval);
       clearInterval(timerInterval);
       startBtn.disabled = false;
@@ -707,6 +712,7 @@ function spawnTarget() {
   </script>
 </body>
 </html>
+
 
 
 
