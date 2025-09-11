@@ -74,6 +74,14 @@
       box-sizing: border-box;
       user-select: none;
     }
+    /* logos dentro dos alvos */
+.target img{
+  max-width:80%;
+  max-height:80%;
+  object-fit:contain;
+  pointer-events:none; /* clique passa pela imagem */
+  user-select:none;
+   }
     /* Time bar */
     .timebar-wrap {
       flex: 1;
@@ -417,13 +425,21 @@
       "#FFADAD", "#FEE440", "#8AC926", "#1982C4",
       "#80ED99", "#B8B8FF", "#FFC6FF", "#A0C4FF"
     ];
-
     // Distribute colors cyclically (no hint if demo or not)
     const products = rawProducts.map((p, i) => ({
       ...p,
       color: colors[i % colors.length]
     }));
-
+// Preload das logos para evitar “piscadas” no primeiro spawn
+function preloadLogos(list){
+  list.forEach(p=>{
+    if(p.logo){
+      const img = new Image();
+      img.src = p.logo;
+    }
+  });
+}
+preloadLogos(products);
     // Difficulty (includes scoring multiplier on hard)
     function getDifficultyParams() {
       const d = document.getElementById("difficulty").value;
@@ -584,42 +600,55 @@
       gameArea.appendChild(fx);
       setTimeout(()=>fx.remove(), 600);
     }
+     // Spawn targets (static) — agora com logos
+function spawnTarget() {
+  const product = products[Math.floor(Math.random() * products.length)];
+  const target = document.createElement("div");
+  target.className = "target";
+  target.style.backgroundColor = product.color;
 
-    // Spawn targets (static)
-    function spawnTarget() {
-      const product = products[Math.floor(Math.random() * products.length)];
-      const target = document.createElement("div");
-      target.className = "target";
-      target.style.backgroundColor = product.color;
+  // usa logo se existir; senão cai pro texto
+  if (product.logo) {
+    target.innerHTML = `<img src="${product.logo}" alt="${product.name}" title="${product.name}">`;
+    // fallback: se a imagem falhar, mostra o nome
+    const imgEl = target.querySelector("img");
+    imgEl.addEventListener("error", () => {
       target.textContent = product.name;
+    }, { once: true });
+  } else {
+    target.textContent = product.name;
+  }
 
-      // random position
-      target.style.left = Math.random() * (gameArea.clientWidth - 90) + "px";
-      target.style.top  = Math.random() * (gameArea.clientHeight - 90) + "px";
+  // posição aleatória
+  target.style.left = Math.random() * (gameArea.clientWidth - 90) + "px";
+  target.style.top  = Math.random() * (gameArea.clientHeight - 90) + "px";
 
-      // click scoring with combo/streak + difficulty multiplier on hits
-      target.addEventListener("click", (ev) => {
-        const base = product.demo ? 10 : -5;
-        if (product.demo) {
-          streak++;
-          play("sndHit");
-        } else {
-          streak = 0;
-          play("sndMiss");
-        }
-        const combo = 1 + Math.floor(streak / 5) * 0.25;  // +25% every 5 hits
-        const mult  = product.demo ? (combo * DIFF.scoreMult) : 1; // only hits get diff mult
-        const points = Math.round(base * mult);
+  // clique: pontuação (mantém sua lógica de combo/dificuldade)
+  target.addEventListener("click", (ev) => {
+    const base = product.demo ? 10 : -5;
+    if (product.demo) {
+      streak++;
+      play("sndHit");
+    } else {
+      streak = 0;
+      play("sndMiss");
+    }
+    const combo = 1 + Math.floor(streak / 5) * 0.25;      // +25% a cada 5 acertos
+    const mult  = product.demo ? (combo * DIFF.scoreMult) : 1; // só acerto recebe mult de dificuldade
+    const points = Math.round(base * mult);
 
-        score += points;
-        scoreDisplay.textContent = score;
-        flashPoints(target, points, product.demo, combo, DIFF.scoreMult);
-        updateComboBadge(product.demo ? combo * DIFF.scoreMult : 1);
+    score += points;
+    scoreDisplay.textContent = score;
+    flashPoints(target, points, product.demo, combo, DIFF.scoreMult);
+    updateComboBadge(product.demo ? combo * DIFF.scoreMult : 1);
 
-        target.remove();
-        ev.stopPropagation(); // prevent empty-click penalty
-      });
+    target.remove();
+    ev.stopPropagation(); // evita penalidade do clique vazio
+  });
 
+  gameArea.appendChild(target);
+  setTimeout(() => target.remove(), DIFF.duration);
+}
       gameArea.appendChild(target);
       setTimeout(() => target.remove(), DIFF.duration);
     }
@@ -682,6 +711,7 @@
   </script>
 </body>
 </html>
+
 
 
 
