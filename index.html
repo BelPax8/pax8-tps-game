@@ -58,31 +58,31 @@
       overflow: hidden;
     }
     /* Cada alvo - só a logo visível */
+/* Container do alvo: agora sem tamanho fixo, segue o tamanho da imagem */
 .target {
-  width: 110px; /* aumentei o tamanho do alvo */
-  height: 110px;
   position: absolute;
   cursor: pointer;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: none;       /* sem cor de fundo */
-  border-radius: 0;       /* sem arredondamento no container */
+  background: none; /* nada de cor de fundo */
+  border: none;     /* sem borda no container */
   padding: 0;
   box-sizing: border-box;
   user-select: none;
 }
 
-/* Logo dentro do alvo - maior e com borda preta */
+/* Logo do alvo – ela define o tamanho e recebe a borda */
 .target img {
-  width: 100%;
-  height: 100%;
+  width: 110px;       /* aqui você controla o tamanho final */
+  height: 110px;
   object-fit: contain;
-  border: 2px solid #000; /* borda preta */
-  border-radius: 8px;     /* cantos levemente arredondados (opcional) */
-  pointer-events: none;   /* clique passa para o container */
+  border: 2px solid #000; /* borda preta só na imagem */
+  border-radius: 8px;
+  pointer-events: none; /* clique passa para o container */
   user-select: none;
 }
+
     /* Time bar */
     .timebar-wrap {
       flex: 1;
@@ -703,6 +703,7 @@ function spawnTarget() {
   </script>
 </body>
 </html>
+
 
 
 
