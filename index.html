@@ -458,7 +458,9 @@ preloadLogos(products);
     let timerInterval;
     let ranking = []; // {name, points, last}
     let streak = 0;
-    let isPlaying = false;
+    let isPlaying = false;       // (se já adicionou antes, mantenha)
+    let remainingPool = [];      // baralho da rodada (sem reposição)
+
 
     // Elements
     const startBtn = document.getElementById("startBtn");
@@ -549,6 +551,14 @@ preloadLogos(products);
     startBtn.addEventListener("click", startGame);
     closeModal.addEventListener("click", () => modalOverlay.style.display = "none");
     playAgainBtn.addEventListener("click", () => { modalOverlay.style.display = "none"; startGame(); });
+    function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
     // Start round
     function startGame() {
@@ -562,6 +572,8 @@ preloadLogos(products);
       scoreDisplay.textContent = score;
       startBtn.disabled = true;
       gameArea.innerHTML = "";
+// monta o baralho desta rodada (sem repetição)
+      remainingPool = shuffle(products);
 
       isPlaying = true;
 
@@ -607,7 +619,14 @@ preloadLogos(products);
     }
 // Spawn targets (static) — agora com logos
 function spawnTarget() {
-  const product = products[Math.floor(Math.random() * products.length)];
+ // const product = products[Math.floor(Math.random() * products.length)];
+if (remainingPool.length === 0) {
+  // acabaram os vendors — termina a partida mais cedo
+  endGame();
+  return;
+}
+const product = remainingPool.pop(); // retira um, não volta mais nesta rodada
+
   const target = document.createElement("div");
   target.className = "target";
   // sem fundo/color no container
@@ -710,6 +729,7 @@ function spawnTarget() {
   </script>
 </body>
 </html>
+
 
 
 
