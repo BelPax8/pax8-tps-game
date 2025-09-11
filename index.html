@@ -618,11 +618,9 @@ function spawnTarget() {
   } else {
     target.textContent = product.name;
   }
-
   // posição aleatória
   target.style.left = Math.random() * (gameArea.clientWidth - 90) + "px";
   target.style.top  = Math.random() * (gameArea.clientHeight - 90) + "px";
-
   // clique: pontuação (mantém sua lógica de combo/dificuldade)
   target.addEventListener("click", (ev) => {
     const base = product.demo ? 10 : -5;
@@ -645,19 +643,14 @@ function spawnTarget() {
     target.remove();
     ev.stopPropagation(); // evita penalidade do clique vazio
   });
-
   gameArea.appendChild(target);
   setTimeout(() => target.remove(), DIFF.duration);
 }
-      gameArea.appendChild(target);
-      setTimeout(() => target.remove(), DIFF.duration);
-    }
 
     function updateComboBadge(effCombo = 1) {
       const shown = Math.max(1, effCombo);
       comboBadge.textContent = `Streak: ${streak} | Combo: x${shown.toFixed(2)}`;
     }
-
     // Floating points feedback
     function flashPoints(target, points, isHit, combo, diffMult) {
       const fx = document.createElement("div");
@@ -674,13 +667,11 @@ function spawnTarget() {
       gameArea.appendChild(fx);
       setTimeout(()=>fx.remove(), 800);
     }
-
     // End of round
     function endGame() {
       clearInterval(gameInterval);
       clearInterval(timerInterval);
       startBtn.disabled = false;
-
       // mark only current player as "last"
       ranking.forEach(r => r.last = false);
       ranking.push({ name: playerName, points: score, last: true });
@@ -711,6 +702,7 @@ function spawnTarget() {
   </script>
 </body>
 </html>
+
 
 
 
