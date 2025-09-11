@@ -603,17 +603,16 @@ preloadLogos(products);
       gameArea.appendChild(fx);
       setTimeout(()=>fx.remove(), 600);
     }
-     // Spawn targets (static) — agora com logos
+// Spawn targets (static) — agora com logos
 function spawnTarget() {
   const product = products[Math.floor(Math.random() * products.length)];
   const target = document.createElement("div");
   target.className = "target";
-  target.style.backgroundColor = product.color;
+  // sem fundo/color no container
 
   // usa logo se existir; senão cai pro texto
   if (product.logo) {
     target.innerHTML = `<img src="${product.logo}" alt="${product.name}" title="${product.name}">`;
-    // fallback: se a imagem falhar, mostra o nome
     const imgEl = target.querySelector("img");
     imgEl.addEventListener("error", () => {
       target.textContent = product.name;
@@ -621,10 +620,13 @@ function spawnTarget() {
   } else {
     target.textContent = product.name;
   }
-  // posição aleatória
-  target.style.left = Math.random() * (gameArea.clientWidth - 90) + "px";
-  target.style.top  = Math.random() * (gameArea.clientHeight - 90) + "px";
-  // clique: pontuação (mantém sua lógica de combo/dificuldade)
+
+  // posição aleatória considerando o tamanho da imagem (110px)
+  const TARGET_SIZE = 110;
+  target.style.left = Math.random() * (gameArea.clientWidth  - TARGET_SIZE) + "px";
+  target.style.top  = Math.random() * (gameArea.clientHeight - TARGET_SIZE) + "px";
+
+  // clique: pontuação + combo/dificuldade
   target.addEventListener("click", (ev) => {
     const base = product.demo ? 10 : -5;
     if (product.demo) {
@@ -634,8 +636,8 @@ function spawnTarget() {
       streak = 0;
       play("sndMiss");
     }
-    const combo = 1 + Math.floor(streak / 5) * 0.25;      // +25% a cada 5 acertos
-    const mult  = product.demo ? (combo * DIFF.scoreMult) : 1; // só acerto recebe mult de dificuldade
+    const combo = 1 + Math.floor(streak / 5) * 0.25;
+    const mult  = product.demo ? (combo * DIFF.scoreMult) : 1;
     const points = Math.round(base * mult);
 
     score += points;
@@ -644,12 +646,12 @@ function spawnTarget() {
     updateComboBadge(product.demo ? combo * DIFF.scoreMult : 1);
 
     target.remove();
-    ev.stopPropagation(); // evita penalidade do clique vazio
+    ev.stopPropagation(); // evita penalidade de clique vazio
   });
+
   gameArea.appendChild(target);
   setTimeout(() => target.remove(), DIFF.duration);
 }
-
     function updateComboBadge(effCombo = 1) {
       const shown = Math.max(1, effCombo);
       comboBadge.textContent = `Streak: ${streak} | Combo: x${shown.toFixed(2)}`;
@@ -705,6 +707,7 @@ function spawnTarget() {
   </script>
 </body>
 </html>
+
 
 
 
