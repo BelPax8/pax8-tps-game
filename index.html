@@ -1007,10 +1007,32 @@ showPauseModal({
   onAction: nextSetup
 });
 } // <-- fecha endLevel() AQUI
-    function showWinner() {
-  // você pode deixar só um log ou abrir um “badge” legal aqui
-  console.log("🎉 Winner! All levels completed.🎉");
+   function showWinner() {
+  // pausa o jogo se ainda estiver rodando
+  isPlaying = false;
+  clearInterval(gameInterval);
+  clearInterval(timerInterval);
+
+  // Personaliza o modal
+  const titleEl = modalOverlay.querySelector("h3");
+  titleEl.textContent = "🎉 You beat all levels! 🎉";
+
+  // Mostra uma mensagem antes do leaderboard
+  rankingList.innerHTML = `<p style="margin:0 0 8px 0; font-weight:bold; color:#4CAF50;">
+    Congratulations, ${playerName}! You completed all ${maxLevels} levels.
+  </p>`;
+
+  playAgainBtn.textContent = "See leaderboard";
+  playAgainBtn.onclick = () => {
+    modalOverlay.style.display = "none";
+    endGame(); // chama o leaderboard depois
+  };
+
+  closeModal.onclick = () => modalOverlay.style.display = "none";
+
+  modalOverlay.style.display = "flex";
 }
+
 
 function endGame() {
   isPlaying = false;
@@ -1040,6 +1062,7 @@ function endGame() {
   </script>
 </body>
 </html>
+
 
 
 
