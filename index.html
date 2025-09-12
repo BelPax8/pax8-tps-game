@@ -639,18 +639,18 @@ welcomeStartBtn.addEventListener("click", () => {
     renderRankingLists();
 
     // Show intro on first load unless user opted out
-  (function showIntroOnLoad() {
+ (function showIntroOnLoad() {
   try {
     const hide = localStorage.getItem("se_pax8_game_hideIntro") === "1";
-    // só mostra a intro automaticamente se Welcome NÃO estiver visível:
-    const welcomeVisible = document.getElementById("welcomeOverlay").style.display !== "none";
+    const welcomeVisible = document.getElementById("welcomeOverlay")?.style.display !== "none";
     if (!hide && !welcomeVisible) {
       introOverlay.style.display = "flex";
     }
   } catch {
-    // fallback: não abre automaticamente se o welcome está visível
+    // se der erro de localStorage, não abre automaticamente
   }
 })();
+
 tartBtn.addEventListener("click", () => {
       if (introDontShow.checked) {
         try { localStorage.setItem("se_pax8_game_hideIntro", "1"); } catch {}
@@ -726,11 +726,6 @@ function startGame() {
   score = 0;
   streak = 0;
   updateComboBadge();
-function updateLevelScoreHUD() {
-  const earnedThisLevel = score - levelStartScore;
-  levelScoreEl.textContent = earnedThisLevel;
-  targetReqEl.textContent  = requiredToPass;
-}
   // NOVO: começa na fase 1
   currentLevel = 1;
 
@@ -954,13 +949,11 @@ function showWinner() {
         listEl.appendChild(li);
       });
     }
-    function endGame() {
-  // libera timers
+function endGame() {
   isPlaying = false;
   clearInterval(gameInterval);
   clearInterval(timerInterval);
 
-  // marca apenas o jogador atual como "last"
   ranking.forEach(r => r.last = false);
   ranking.push({ name: playerName, points: score, last: true });
   ranking.sort((a, b) => b.points - a.points);
@@ -968,13 +961,12 @@ function showWinner() {
   saveRanking();
   renderRankingLists();
 
-  // mostra modal final
   modalOverlay.style.display = "flex";
 }
-
   </script>
 </body>
 </html>
+
 
 
 
