@@ -428,9 +428,11 @@ body.hard .target img:hover {
     </div>
     <div class="group"><span id="comboBadge">Streak: 0 | Combo: x1.00</span></div>
     <div class="group">
-      <button id="muteBtn" title="Toggle sound (M)">🔊 Sound</button>
-      <button id="startBtn">Start Game</button>
-    </div>
+  <strong>Target:</strong> <span id="targetReq">0</span>
+  &nbsp;|&nbsp;
+  <strong>This level:</strong> <span id="levelScore">0</span>
+</div>
+
   </div>
 
   <!-- Game area -->
@@ -587,6 +589,9 @@ preloadLogos(products);
     let timerInterval;
     let ranking = []; // {name, points, last}
     let streak = 0;
+    // Level gating (90% rule)
+    let levelStartScore = 0;   // score no início da fase
+    let requiredToPass = 0;    // pontos mínimos para passar a fase
     let isPlaying = false;       // (se já adicionou antes, mantenha)
     let remainingPool = [];      // baralho da rodada (sem reposição)
 
@@ -611,6 +616,8 @@ const vendorsNoDemo = products.filter(p => !p.demo);
     const playAgainBtn = document.getElementById("playAgainBtn");
     const muteBtn = document.getElementById("muteBtn");
     const comboBadge = document.getElementById("comboBadge");
+    const targetReqEl  = document.getElementById("targetReq");
+    const levelScoreEl = document.getElementById("levelScore");
 
     // Intro elements
     const introOverlay   = document.getElementById("introOverlay");
@@ -746,7 +753,11 @@ function startGame() {
   score = 0;
   streak = 0;
   updateComboBadge();
-
+function updateLevelScoreHUD() {
+  const earnedThisLevel = score - levelStartScore;
+  levelScoreEl.textContent = earnedThisLevel;
+  targetReqEl.textContent  = requiredToPass;
+}
   // NOVO: começa na fase 1
   currentLevel = 1;
 
@@ -760,7 +771,15 @@ function startGame() {
   // NOVO: monta o baralho da fase 1 (sem repetição)
   remainingPool = buildLevelPool(currentLevel);
   isPlaying = true;
+// registra score inicial da fase e calcula meta (90% do máximo possível sem combo)
+levelStartScore = score;
 
+const demoInPool = remainingPool.filter(p => p.demo).length;
+const levelMult = 1 + (currentLevel - 1) * 0.10; // +10% por fase
+requiredToPass = Math.ceil(0.9 * demoInPool * 10 * DIFF.scoreMult * levelMult);
+  updateLevelScoreHUD();
+// (10 = base de acerto; ignoramos combo para a meta)
+console.log(`Level ${currentLevel} target: ${requiredToPass} pts (demo items: ${demoInPool})`);
   clearInterval(gameInterval);
   clearInterval(timerInterval);
   gameInterval = setInterval(spawnTarget, DIFF.spawn);
@@ -780,6 +799,7 @@ function startGame() {
   if (!isPlaying) return;            // <— evita penalizar antes/depois do jogo
   if (e.target !== gameArea) return; // clicou num alvo, ignora aqui
   score -= 1;
+      updateLevelScoreHUD();
   scoreDisplay.textContent = score;
   play("sndMiss");
   showClickFx(e);
@@ -844,6 +864,7 @@ const product = remainingPool.pop(); // retira um, não volta mais nesta rodada
     const points = Math.round(base * mult * levelMult);
 
     score += points;
+    updateLevelScoreHUD();
     scoreDisplay.textContent = score;
     flashPoints(target, points, product.demo, combo, DIFF.scoreMult);
     updateComboBadge(product.demo ? combo * DIFF.scoreMult : 1);
@@ -882,27 +903,63 @@ function endLevel() {
   clearInterval(gameInterval);
   clearInterval(timerInterval);
 
-  currentLevel++;
+  // pontos feitos nesta fase
+  const earnedThisLevel = score - levelStartScore;
 
-  // Chegou ao fim? Winner!
-  if (currentLevel > maxLevels) {
-    showWinner();   // tela/ação de vencedor (pode ser um modal próprio)
-    endGame();      // reaproveita fluxo atual de ranking + modal
+  // checa a regra dos 90%
+  if (earnedThisLevel < requiredToPass) {
+    // NÃO passou: repete a MESMA fase
+    alert(`Level ${currentLevel} failed.\nYou scored ${earnedThisLevel} pts, need ${requiredToPass} pts (90%). Try again!`);
+
+    // recomeça a mesma fase
+    timeLeft = DIFF.time;
+    timeDisplay.textContent = timeLeft;
+    timeBar.style.width = "100%";
+    remainingPool = buildLevelPool(currentLevel);
+
+    // novo início da fase => recalcula meta
+    levelStartScore = score;
+    const demoInPool = remainingPool.filter(p => p.demo).length;
+    const levelMult = 1 + (currentLevel - 1) * 0.10;
+    requiredToPass = Math.ceil(0.9 * demoInPool * 10 * DIFF.scoreMult * levelMult);
+    updateLevelScoreHUD()
+    console.log(`Retry Level ${currentLevel} target: ${requiredToPass} pts (demo items: ${demoInPool})`);
+
+    // retoma timers
+    isPlaying = true;
+    gameInterval = setInterval(spawnTarget, DIFF.spawn);
+    timerInterval = setInterval(updateTimer, 1000);
     return;
   }
 
-  // Próxima fase: reseta tempo e baralho, e continua
+  // PASSOU — vai para próxima fase
+  currentLevel++;
+
+  if (currentLevel > maxLevels) {
+    showWinner(); // badge/tela de vencedor
+    endGame();    // ranking/modal final
+    return;
+  }
+
+  // próxima fase
   timeLeft = DIFF.time;
   timeDisplay.textContent = timeLeft;
   timeBar.style.width = "100%";
   remainingPool = buildLevelPool(currentLevel);
-  isPlaying = true;
 
+  // novo início da fase => recalcula meta
+  levelStartScore = score;
+  const demoInNext = remainingPool.filter(p => p.demo).length;
+  const levelMultNext = 1 + (currentLevel - 1) * 0.10;
+  requiredToPass = Math.ceil(0.9 * demoInNext * 10 * DIFF.scoreMult * levelMultNext);
+  updateLevelScoreHUD()
+  console.log(`Level ${currentLevel} target: ${requiredToPass} pts (demo items: ${demoInNext})`);
+
+  isPlaying = true;
   gameInterval = setInterval(spawnTarget, DIFF.spawn);
   timerInterval = setInterval(updateTimer, 1000);
 }
 
-// Placeholder simples (podemos estilizar depois)
 function showWinner() {
   console.log("🎉 Winner! All levels completed.");
   // depois trocamos por um modal com badge
@@ -927,6 +984,7 @@ function showWinner() {
   </script>
 </body>
 </html>
+
 
 
 
