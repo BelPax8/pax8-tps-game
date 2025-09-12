@@ -852,7 +852,31 @@ const product = remainingPool.pop(); // retira um, não volta mais nesta rodada
 
   // clique: pontuação + combo/dificuldade
   target.addEven
-  gameArea.appendChild(target);
+ // clique: pontuação + combo/dificuldade
+target.addEventListener("click", (ev) => {
+  const base = product.demo ? 10 : -5;
+  if (product.demo) {
+    streak++;
+    play("sndHit");
+  } else {
+    streak = 0;
+    play("sndMiss");
+  }
+  const combo = 1 + Math.floor(streak / 5) * 0.25;
+  const mult  = product.demo ? (combo * DIFF.scoreMult) : 1;
+  const levelMult = 1 + (currentLevel - 1) * 0.10; // +10% por fase
+  const points = Math.round(base * mult * levelMult);
+
+  score += points;
+  updateLevelScoreHUD();
+  scoreDisplay.textContent = score;
+  flashPoints(target, points, product.demo, combo, DIFF.scoreMult);
+  updateComboBadge(product.demo ? combo * DIFF.scoreMult : 1);
+
+  target.remove();
+  ev.stopPropagation(); // evita o -1 do #gameArea
+});
+
   setTimeout(() => target.remove(), DIFF.duration);
 }
     function updateComboBadge(effCombo = 1) {
@@ -1055,6 +1079,7 @@ function endGame() {
   </script>
 </body>
 </html>
+
 
 
 
