@@ -986,7 +986,11 @@ showPauseModal({
   onAction: nextSetup
 });
 } // <-- fecha endLevel() AQUI
-    
+    function showWinner() {
+  // você pode deixar só um log ou abrir um “badge” legal aqui
+  console.log("🎉 Winner! All levels completed.🎉");
+}
+
 function endGame() {
   isPlaying = false;
   clearInterval(gameInterval);
@@ -1015,6 +1019,7 @@ function endGame() {
   </script>
 </body>
 </html>
+
 
 
 
