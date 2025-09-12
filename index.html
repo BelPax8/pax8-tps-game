@@ -976,13 +976,15 @@ const nextSetup = () => {
 };
 
 // mostra anúncio de level up e só inicia após o clique
+// mostra anúncio de level up e só inicia após o clique
 showPauseModal({
   title: `Level ${currentLevel}`,
   message: `Difficulty scaling applied. Good luck!`,
   actionText: "Start level",
   onAction: nextSetup
 });
-}
+} // <-- fecha endLevel() AQUI
+    
 function endGame() {
   isPlaying = false;
   clearInterval(gameInterval);
@@ -1000,6 +1002,7 @@ function endGame() {
   </script>
 </body>
 </html>
+
 
 
 
