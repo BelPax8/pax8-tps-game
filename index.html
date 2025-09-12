@@ -4,14 +4,30 @@
   <meta charset="UTF-8" />
   <title>The TPS Pax8 Game</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      background: #f4f4f4;
-    }
+   body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  /* Novo fundo de imagem */
+  background: url("images/welcome-bg.jpg") no-repeat center center fixed;
+  background-size: cover;
+}
+
+/* Novo estilo para a área do jogo */
+#gameArea {
+  width: 100%;
+  max-width: 1000px;
+  height: 560px;
+  background: rgba(255, 255, 255, 0.85); /* fundo branco com transparência */
+  border: 2px solid #333;
+  border-radius: 8px;
+  backdrop-filter: blur(4px); /* vidro fosco */
+  position: relative;
+  overflow: hidden;
+}
     #playerForm {
       margin-top: 20px;
       padding: 10px;
@@ -852,6 +868,7 @@ const product = remainingPool.pop(); // retira um, não volta mais nesta rodada
   </script>
 </body>
 </html>
+
 
 
 
