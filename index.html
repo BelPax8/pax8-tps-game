@@ -64,17 +64,7 @@
       background: #666;
       cursor: not-allowed;
     }
-    #gameArea {
-      width: 100%;
-      max-width: 1000px;
-      height: 560px;
-      background: white;
-      border: 2px solid #333;
-      position: relative;
-      overflow: hidden;
-    }
-    /* Cada alvo - só a logo visível */
-/* Container do alvo - totalmente transparente e sem tamanho fixo */
+   /* Container do alvo - totalmente transparente e sem tamanho fixo */
 .target {
   position: absolute;
   cursor: pointer;
@@ -240,24 +230,7 @@ body.hard .target img:hover {
       rgba(0,0,0,0.75) 100%
     );
 }
-
 /* Conteúdo centralizado */
-#welcomeContent {
-  position: relative; /* fica acima do overlay escuro */
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  text-align: center;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-  width: 400px;
-  max-width: 90%;
-}
-
-#welcomeContent h1 {
-  margin-top: 0;
-  margin-bottom: 12px;
-}
-
 #welcomeStartBtn {
   background: #4CAF50;
   color: white;
@@ -666,15 +639,19 @@ welcomeStartBtn.addEventListener("click", () => {
     renderRankingLists();
 
     // Show intro on first load unless user opted out
-    (function showIntroOnLoad() {
-      try {
-        const hide = localStorage.getItem("se_pax8_game_hideIntro") === "1";
-        if (!hide) introOverlay.style.display = "flex";
-      } catch {
-        introOverlay.style.display = "flex";
-      }
-    })();
-    introStartBtn.addEventListener("click", () => {
+  (function showIntroOnLoad() {
+  try {
+    const hide = localStorage.getItem("se_pax8_game_hideIntro") === "1";
+    // só mostra a intro automaticamente se Welcome NÃO estiver visível:
+    const welcomeVisible = document.getElementById("welcomeOverlay").style.display !== "none";
+    if (!hide && !welcomeVisible) {
+      introOverlay.style.display = "flex";
+    }
+  } catch {
+    // fallback: não abre automaticamente se o welcome está visível
+  }
+})();
+tartBtn.addEventListener("click", () => {
       if (introDontShow.checked) {
         try { localStorage.setItem("se_pax8_game_hideIntro", "1"); } catch {}
       }
@@ -733,14 +710,10 @@ function buildLevelPool(level) {
   return shuffle([...pickDemo, ...pickNoDemo]);
 }
 
-// Se ainda não tiver a função shuffle, adicione:
-function shuffle(arr) {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
+function updateLevelScoreHUD() {
+  const earnedThisLevel = score - levelStartScore;
+  levelScoreEl.textContent = earnedThisLevel;
+  targetReqEl.textContent  = requiredToPass;
 }
 
     // Start round
@@ -777,7 +750,7 @@ levelStartScore = score;
 const demoInPool = remainingPool.filter(p => p.demo).length;
 const levelMult = 1 + (currentLevel - 1) * 0.10; // +10% por fase
 requiredToPass = Math.ceil(0.9 * demoInPool * 10 * DIFF.scoreMult * levelMult);
-  updateLevelScoreHUD();
+
 // (10 = base de acerto; ignoramos combo para a meta)
 console.log(`Level ${currentLevel} target: ${requiredToPass} pts (demo items: ${demoInPool})`);
   clearInterval(gameInterval);
@@ -981,9 +954,28 @@ function showWinner() {
         listEl.appendChild(li);
       });
     }
+    function endGame() {
+  // libera timers
+  isPlaying = false;
+  clearInterval(gameInterval);
+  clearInterval(timerInterval);
+
+  // marca apenas o jogador atual como "last"
+  ranking.forEach(r => r.last = false);
+  ranking.push({ name: playerName, points: score, last: true });
+  ranking.sort((a, b) => b.points - a.points);
+
+  saveRanking();
+  renderRankingLists();
+
+  // mostra modal final
+  modalOverlay.style.display = "flex";
+}
+
   </script>
 </body>
 </html>
+
 
 
 
