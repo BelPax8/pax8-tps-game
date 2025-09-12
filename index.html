@@ -2,7 +2,7 @@
 <html lang="en-US"> 
 <head>
   <meta charset="UTF-8" />
-  <title>The SE Pax8 Game</title>
+  <title>The TPS Pax8 Game</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -176,17 +176,51 @@
     }
     /* Mute indicator */
     #muteBtn.muted { background: #888 !important; }
-/* Welcome Screen */
+/* Welcome Screen com imagem de fundo */
 #welcomeOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.2);
+  background: url("images/welcome-bg.jpg") center/cover no-repeat;
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 2000;
 }
 
+/* Overlay escuro para o texto ficar legível */
+#welcomeOverlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+/* Conteúdo centralizado */
+#welcomeContent {
+  position: relative; /* fica acima do overlay escuro */
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  width: 400px;
+  max-width: 90%;
+}
+
+#welcomeContent h1 {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+#welcomeStartBtn {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  font-size: 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
 #welcomeContent {
   background: white;
   padding: 20px;
@@ -781,6 +815,7 @@ const product = remainingPool.pop(); // retira um, não volta mais nesta rodada
   </script>
 </body>
 </html>
+
 
 
 
