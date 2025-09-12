@@ -1017,10 +1017,10 @@ showPauseModal({
   titleEl.textContent = "🎉 You beat all levels! 🎉";
 
   // Mostra uma mensagem antes do leaderboard
-  rankingList.innerHTML = `<p style="margin:0 0 8px 0; font-weight:bold; color:#4CAF50;">
+ rankingList.innerHTML = `
+  <li style="list-style:none; margin:0 0 8px 0; font-weight:bold; color:#4CAF50;">
     Congratulations, ${playerName}! You completed all ${maxLevels} levels.
-  </p>`;
-
+  </li>`;
   playAgainBtn.textContent = "See leaderboard";
   playAgainBtn.onclick = () => {
     modalOverlay.style.display = "none";
@@ -1061,6 +1061,7 @@ function endGame() {
   </script>
 </body>
 </html>
+
 
 
 
