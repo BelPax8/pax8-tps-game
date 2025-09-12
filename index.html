@@ -906,84 +906,84 @@ const product = remainingPool.pop(); // retira um, não volta mais nesta rodada
 }
 
 function endLevel() {
-  // para spawns/tempo atuais
   isPlaying = false;
   clearInterval(gameInterval);
   clearInterval(timerInterval);
 
-  // pontos feitos nesta fase
   const earnedThisLevel = score - levelStartScore;
-  // checa a regra dos 90%
-if (earnedThisLevel < requiredToPass) {
+
+  // >>> NOVO: registra a fase no histórico (mesmo se falhar)
+  perLevelScores.push(earnedThisLevel);
+
+  if (earnedThisLevel < requiredToPass) {
+    showPauseModal({
+      title: `Level ${currentLevel} failed`,
+      message: `You scored ${earnedThisLevel} pts but need ${requiredToPass} pts. Try again!`,
+      actionText: "Retry level",
+      onAction: () => {
+        gameArea.innerHTML = "";
+
+        timeLeft = DIFF.time;
+        timeDisplay.textContent = timeLeft;
+        timeBar.style.width = "100%";
+        remainingPool = buildLevelPool(currentLevel);
+
+        // ancora para a nova tentativa da MESMA fase
+        levelStartScore = score;
+        const demoInPool = remainingPool.filter(p => p.demo).length;
+        const levelMult = 1 + (currentLevel - 1) * 0.10;
+        requiredToPass = Math.ceil(0.9 * demoInPool * 10 * DIFF.scoreMult * levelMult);
+        updateLevelScoreHUD();
+
+        streak = 0;
+        updateComboBadge();
+
+        isPlaying = true;
+        clearInterval(gameInterval);
+        clearInterval(timerInterval);
+        gameInterval = setInterval(spawnTarget, DIFF.spawn);
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+    });
+    return;
+  }
+
+  // PASSOU
+  currentLevel++;
+
+  if (currentLevel > maxLevels) {
+    showWinner();
+    return;
+  }
+
+  const nextSetup = () => {
+    gameArea.innerHTML = "";
+
+    timeLeft = DIFF.time;
+    timeDisplay.textContent = timeLeft;
+    timeBar.style.width = "100%";
+    remainingPool = buildLevelPool(currentLevel);
+
+    // ancora para a PRÓXIMA fase
+    levelStartScore = score;
+    const demoInNext = remainingPool.filter(p => p.demo).length;
+    const levelMultNext = 1 + (currentLevel - 1) * 0.10;
+    requiredToPass = Math.ceil(0.9 * demoInNext * 10 * DIFF.scoreMult * levelMultNext);
+    updateLevelScoreHUD();
+
+    isPlaying = true;
+    gameInterval = setInterval(spawnTarget, DIFF.spawn);
+    timerInterval = setInterval(updateTimer, 1000);
+  };
+
   showPauseModal({
-    title: `Level ${currentLevel} failed`,
-    message: `You scored ${earnedThisLevel} pts but need ${requiredToPass} pts. Try again!`,
-    actionText: "Retry level",
-   onAction: () => {
-  // limpa alvos antigos antes de reiniciar a mesma fase
-  gameArea.innerHTML = "";   // <<-- ADICIONE AQUI
-
-  timeLeft = DIFF.time;
-  timeDisplay.textContent = timeLeft;
-  timeBar.style.width = "100%";
-  remainingPool = buildLevelPool(currentLevel);
-
-  levelStartScore = score;
-  const demoInPool = remainingPool.filter(p => p.demo).length;
-  const levelMult = 1 + (currentLevel - 1) * 0.10;
-  requiredToPass = Math.ceil(0.9 * demoInPool * 10 * DIFF.scoreMult * levelMult);
-  updateLevelScoreHUD();
-
-  streak = 0;
-  updateComboBadge();
-
-  isPlaying = true;
-  clearInterval(gameInterval);
-  clearInterval(timerInterval);
-  gameInterval = setInterval(spawnTarget, DIFF.spawn);
-  timerInterval = setInterval(updateTimer, 1000);
-}
-
+    title: `Level ${currentLevel}`,
+    message: `Difficulty scaling applied. Good luck!`,
+    actionText: "Start level",
+    onAction: nextSetup
   });
-  return;
-}
- // PASSOU — vai para próxima fase
-currentLevel++;
-
-if (currentLevel > maxLevels) {
-  showWinner();
-  return;
 }
 
-// prepara próxima fase
-const nextSetup = () => {
-  gameArea.innerHTML = "";   // <<-- ADICIONE AQUI
-
-  timeLeft = DIFF.time;
-  timeDisplay.textContent = timeLeft;
-  timeBar.style.width = "100%";
-  remainingPool = buildLevelPool(currentLevel);
-
-  levelStartScore = score;
-  const demoInNext = remainingPool.filter(p => p.demo).length;
-  const levelMultNext = 1 + (currentLevel - 1) * 0.10;
-  requiredToPass = Math.ceil(0.9 * demoInNext * 10 * DIFF.scoreMult * levelMultNext);
-  updateLevelScoreHUD();
-
-  isPlaying = true;
-  gameInterval = setInterval(spawnTarget, DIFF.spawn);
-  timerInterval = setInterval(updateTimer, 1000);
-};
-
-// mostra anúncio de level up e só inicia após o clique
-// mostra anúncio de level up e só inicia após o clique
-showPauseModal({
-  title: `Level ${currentLevel}`,
-  message: `Difficulty scaling applied. Good luck!`,
-  actionText: "Start level",
-  onAction: nextSetup
-});
-} // <-- fecha endLevel() AQUI
    function showWinner() {
   // pausa o jogo se ainda estiver rodando
   isPlaying = false;
@@ -1053,6 +1053,7 @@ function endGame() {
   </script>
 </body>
 </html>
+
 
 
 
