@@ -590,6 +590,13 @@ preloadLogos(products);
     let isPlaying = false;       // (se já adicionou antes, mantenha)
     let remainingPool = [];      // baralho da rodada (sem reposição)
 
+// Levels
+let currentLevel = 1;
+const maxLevels = 10;
+
+// Listas derivadas (já com base no demo: true/false)
+const vendorsDemo   = products.filter(p => p.demo);
+const vendorsNoDemo = products.filter(p => !p.demo);
 
     // Elements
     const startBtn = document.getElementById("startBtn");
@@ -695,41 +702,77 @@ welcomeStartBtn.addEventListener("click", () => {
   }
   return a;
 }
+   // Retorna a proporção de vendors com demo para um nível:
+// L1 = 0.8 (80%), … L10 = 0.2 (20%)
+function getDemoRatio(level) {
+  const start = 0.8, end = 0.2;
+  const t = Math.min(Math.max((level - 1) / (maxLevels - 1), 0), 1);
+  return start + (end - start) * t;
+}
+
+// Monta o "baralho" da fase a partir da proporção
+function buildLevelPool(level) {
+  const ratio = getDemoRatio(level);
+
+  // Tamanho do baralho por fase (ajustável). Use algo menor se quiser fases rápidas.
+  const totalTargets = Math.min(products.length, 40);
+
+  const demoCount   = Math.max(1, Math.round(totalTargets * ratio));
+  const noDemoCount = Math.max(1, totalTargets - demoCount);
+
+  const pickDemo   = shuffle([...vendorsDemo]).slice(0, Math.min(demoCount, vendorsDemo.length));
+  const pickNoDemo = shuffle([...vendorsNoDemo]).slice(0, Math.min(noDemoCount, vendorsNoDemo.length));
+
+  return shuffle([...pickDemo, ...pickNoDemo]);
+}
+
+// Se ainda não tiver a função shuffle, adicione:
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
     // Start round
-    function startGame() {
-       // aplica classe de dificuldade no body
+function startGame() {
+  // aplica classe de dificuldade no body (para o hover colorido)
   document.body.classList.remove("easy", "normal", "hard");
   document.body.classList.add(document.getElementById("difficulty").value);
 
-       DIFF = getDifficultyParams();
-      score = 0;
-      streak = 0;
-      updateComboBadge();
-      timeLeft = DIFF.time;
-      timeDisplay.textContent = timeLeft;
-      timeBar.style.width = "100%";
-      scoreDisplay.textContent = score;
-      startBtn.disabled = true;
-      gameArea.innerHTML = "";
-// monta o baralho desta rodada (sem repetição)
-      remainingPool = shuffle(products);
+  DIFF = getDifficultyParams();
+  score = 0;
+  streak = 0;
+  updateComboBadge();
 
-      isPlaying = true;
+  // NOVO: começa na fase 1
+  currentLevel = 1;
 
-      clearInterval(gameInterval);
-      clearInterval(timerInterval);
-      gameInterval = setInterval(spawnTarget, DIFF.spawn);
-      timerInterval = setInterval(updateTimer, 1000);
-    }
+  timeLeft = DIFF.time;
+  timeDisplay.textContent = timeLeft;
+  timeBar.style.width = "100%";
+  scoreDisplay.textContent = score;
+  startBtn.disabled = true;
+  gameArea.innerHTML = "";
 
+  // NOVO: monta o baralho da fase 1 (sem repetição)
+  remainingPool = buildLevelPool(currentLevel);
+  isPlaying = true;
+
+  clearInterval(gameInterval);
+  clearInterval(timerInterval);
+  gameInterval = setInterval(spawnTarget, DIFF.spawn);
+  timerInterval = setInterval(updateTimer, 1000);
+}
     // Timer
     function updateTimer() {
       timeLeft--;
       timeDisplay.textContent = timeLeft;
       const pct = Math.max(0, (timeLeft / DIFF.time) * 100);
       timeBar.style.width = pct + "%";
-      if (timeLeft <= 0) endGame();
+      if (timeLeft <= 0) endLevel();
     }
 
     // Empty click penalty (-1)
@@ -762,8 +805,7 @@ function spawnTarget() {
  // const product = products[Math.floor(Math.random() * products.length)];
   if (!isPlaying) return;
   if (remainingPool.length === 0) {
-  // acabaram os vendors — termina a partida mais cedo
-  endGame();
+  endLevel(); // avança de fase em vez de encerrar o jogo
   return;
 }
 const product = remainingPool.pop(); // retira um, não volta mais nesta rodada
@@ -798,7 +840,8 @@ const product = remainingPool.pop(); // retira um, não volta mais nesta rodada
     }
     const combo = 1 + Math.floor(streak / 5) * 0.25;
     const mult  = product.demo ? (combo * DIFF.scoreMult) : 1;
-    const points = Math.round(base * mult);
+    const levelMult = 1 + (currentLevel - 1) * 0.10; // +10% por fase
+    const points = Math.round(base * mult * levelMult);
 
     score += points;
     scoreDisplay.textContent = score;
@@ -833,21 +876,37 @@ const product = remainingPool.pop(); // retira um, não volta mais nesta rodada
       setTimeout(()=>fx.remove(), 800);
     }
     // End of round
-    function endGame() {
-      isPlaying = false;
-      clearInterval(gameInterval);
-      clearInterval(timerInterval);
-      startBtn.disabled = false;
-      // mark only current player as "last"
-      ranking.forEach(r => r.last = false);
-      ranking.push({ name: playerName, points: score, last: true });
-      ranking.sort((a, b) => b.points - a.points);
+function endLevel() {
+  // para spawns/tempo atuais
+  isPlaying = false;
+  clearInterval(gameInterval);
+  clearInterval(timerInterval);
 
-      saveRanking();
-      renderRankingLists();
+  currentLevel++;
 
-      modalOverlay.style.display = "flex";
-    }
+  // Chegou ao fim? Winner!
+  if (currentLevel > maxLevels) {
+    showWinner();   // tela/ação de vencedor (pode ser um modal próprio)
+    endGame();      // reaproveita fluxo atual de ranking + modal
+    return;
+  }
+
+  // Próxima fase: reseta tempo e baralho, e continua
+  timeLeft = DIFF.time;
+  timeDisplay.textContent = timeLeft;
+  timeBar.style.width = "100%";
+  remainingPool = buildLevelPool(currentLevel);
+  isPlaying = true;
+
+  gameInterval = setInterval(spawnTarget, DIFF.spawn);
+  timerInterval = setInterval(updateTimer, 1000);
+}
+
+// Placeholder simples (podemos estilizar depois)
+function showWinner() {
+  console.log("🎉 Winner! All levels completed.");
+  // depois trocamos por um modal com badge
+}
 
     // Render both lists (modal + persistent)
     function renderRankingLists() {
@@ -868,6 +927,7 @@ const product = remainingPool.pop(); // retira um, não volta mais nesta rodada
   </script>
 </body>
 </html>
+
 
 
 
