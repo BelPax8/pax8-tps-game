@@ -953,37 +953,46 @@ function endLevel() {
   // >>> NOVO: registra a fase no histórico (mesmo se falhar)
   perLevelScores.push(earnedThisLevel);
 
-  if (earnedThisLevel < requiredToPass) {
-    showPauseModal({
-      title: `Level ${currentLevel} failed`,
-      message: `You scored ${earnedThisLevel} pts but need ${requiredToPass} pts. Try again!`,
-      actionText: "Retry level",
-      onAction: () => {
-        gameArea.innerHTML = "";
+if (earnedThisLevel < requiredToPass) {
+  showPauseModal({
+    title: `Level ${currentLevel} failed`,
+    message: `You scored ${earnedThisLevel} pts but need ${requiredToPass} pts. Try again!`,
+    actionText: "Retry level",
+    onAction: () => {
+      gameArea.innerHTML = "";
 
-        timeLeft = DIFF.time;
-        timeDisplay.textContent = timeLeft;
-        timeBar.style.width = "100%";
-        remainingPool = buildLevelPool(currentLevel);
+      timeLeft = DIFF.time;
+      timeDisplay.textContent = timeLeft;
+      timeBar.style.width = "100%";
+      remainingPool = buildLevelPool(currentLevel);
 
-        // ancora para a nova tentativa da MESMA fase
-        levelStartScore = score;
-        const demoInPool = remainingPool.filter(p => p.demo).length;
-        const levelMult = 1 + (currentLevel - 1) * 0.10;
-        requiredToPass = Math.ceil(0.9 * demoInPool * 10 * DIFF.scoreMult * levelMult);
-        updateLevelScoreHUD();
+      // ancora para a nova tentativa da MESMA fase
+      levelStartScore = score;
+      const demoInPool = remainingPool.filter(p => p.demo).length;
+      const levelMult = 1 + (currentLevel - 1) * 0.10;
+      requiredToPass = Math.ceil(0.9 * demoInPool * 10 * DIFF.scoreMult * levelMult);
+      updateLevelScoreHUD();
 
-        streak = 0;
-        updateComboBadge();
+      streak = 0;
+      updateComboBadge();
 
-        isPlaying = true;
-        clearInterval(gameInterval);
-        clearInterval(timerInterval);
-        gameInterval = setInterval(spawnTarget, DIFF.spawn);
-        timerInterval = setInterval(updateTimer, 1000);
-      }
-    });
-    return;
+      isPlaying = true;
+      clearInterval(gameInterval);
+      clearInterval(timerInterval);
+      gameInterval = setInterval(spawnTarget, DIFF.spawn);
+      timerInterval = setInterval(updateTimer, 1000);
+    }
+  });
+
+  // 👇 INSIRA AQUI
+  document.getElementById("closeModal").onclick = () => {
+    modalOverlay.style.display = "none";
+    endGame(); // grava nome + total no ranking
+  };
+
+  return;
+}
+
   }
 
   // PASSOU
@@ -1091,6 +1100,7 @@ function endGame() {
   </script>
 </body>
 </html>
+
 
 
 
