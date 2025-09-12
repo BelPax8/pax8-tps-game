@@ -75,16 +75,40 @@
 
 /* Logo define o tamanho final e leva a borda */
 .target img {
-  display: block;           /* remove espaçamento fantasma de img inline */
-  width: 110px;             /* ajuste conforme quiser */
+  display: block;
+  width: 110px;
   height: 110px;
   object-fit: contain;
-  border: 2px solid #000;   /* borda preta apenas na imagem */
-  border-radius: 8px;       /* opcional: cantos arredondados */
-  background: white;        /* opcional: fundo branco atrás da logo */
-  pointer-events: none;     /* clique passa para o container */
+  border: 2px solid #000;
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
   user-select: none;
+  transition: transform 0.2s ease-in-out; /* <<< mover para cá */
 }
+
+.target img:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35), /* sombra mais intensa */
+              0 0 12px rgba(76, 175, 80, 0.6); /* brilho esverdeado suave */
+}
+/* Hover com cores diferentes para cada dificuldade */
+body.easy .target img:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35),
+              0 0 12px rgba(76, 175, 80, 0.6); /* verde */
+}
+
+body.normal .target img:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35),
+              0 0 12px rgba(255, 193, 7, 0.6); /* amarelo */
+}
+
+body.hard .target img:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35),
+              0 0 12px rgba(244, 67, 54, 0.7); /* vermelho */
+}
+
     /* Time bar */
     .timebar-wrap {
       flex: 1;
@@ -187,12 +211,18 @@
   z-index: 2000;
 }
 
-/* Overlay escuro para o texto ficar legível */
+/* Vinheta + degradê para melhorar contraste do welcome */
 #welcomeOverlay::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background:
+    linear-gradient(180deg,
+      rgba(0,0,0,0.75) 0%,
+      rgba(0,0,0,0.35) 40%,
+      rgba(0,0,0,0.35) 60%,
+      rgba(0,0,0,0.75) 100%
+    );
 }
 
 /* Conteúdo centralizado */
@@ -221,16 +251,20 @@
   border-radius: 8px;
   cursor: pointer;
 }
+/* Card com efeito glass */
 #welcomeContent {
-  background: white;
+  background: rgba(255, 255, 255, 0.15); /* fundo semitransparente */
+  backdrop-filter: blur(10px);          /* desfoque do fundo */
+  -webkit-backdrop-filter: blur(10px);  /* suporte Safari */
+  border: 1px solid rgba(255, 255, 255, 0.3);
   padding: 20px;
   border-radius: 12px;
   text-align: center;
   box-shadow: 0 10px 30px rgba(0,0,0,0.4);
   width: 400px;
   max-width: 90%;
+  color: white; /* garante contraste do texto */
 }
-
 #welcomeContent h1 {
   margin-top: 0;
   margin-bottom: 12px;
@@ -648,7 +682,11 @@ welcomeStartBtn.addEventListener("click", () => {
 
     // Start round
     function startGame() {
-      DIFF = getDifficultyParams();
+       // aplica classe de dificuldade no body
+  document.body.classList.remove("easy", "normal", "hard");
+  document.body.classList.add(document.getElementById("difficulty").value);
+
+       DIFF = getDifficultyParams();
       score = 0;
       streak = 0;
       updateComboBadge();
@@ -706,7 +744,8 @@ welcomeStartBtn.addEventListener("click", () => {
 // Spawn targets (static) — agora com logos
 function spawnTarget() {
  // const product = products[Math.floor(Math.random() * products.length)];
-if (remainingPool.length === 0) {
+  if (!isPlaying) return;
+  if (remainingPool.length === 0) {
   // acabaram os vendors — termina a partida mais cedo
   endGame();
   return;
@@ -715,9 +754,7 @@ const product = remainingPool.pop(); // retira um, não volta mais nesta rodada
 
   const target = document.createElement("div");
   target.className = "target";
-  // sem fundo/color no container
 
-  // usa logo se existir; senão cai pro texto
   if (product.logo) {
     target.innerHTML = `<img src="${product.logo}" alt="${product.name}" title="${product.name}">`;
     const imgEl = target.querySelector("img");
@@ -815,6 +852,7 @@ const product = remainingPool.pop(); // retira um, não volta mais nesta rodada
   </script>
 </body>
 </html>
+
 
 
 
