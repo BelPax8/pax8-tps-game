@@ -645,6 +645,27 @@ welcomeStartBtn.addEventListener("click", () => {
     // Load persisted ranking on boot
     ranking = loadRanking();
     renderRankingLists();
+function renderRankingLists() {
+  // Modal (usado quando o jogo termina)
+  if (rankingList) {
+    rankingList.innerHTML = ranking
+      .map((r, i) => {
+        const you = r.last ? ' class="highlight"' : '';
+        return `<li${you}>${i + 1}. ${r.name} — ${r.points} pts</li>`;
+      })
+      .join("");
+  }
+
+  // Hall of Fame (persistente)
+  if (rankingListPersist) {
+    rankingListPersist.innerHTML = ranking
+      .map((r, i) => {
+        const you = r.last ? ' class="highlight"' : '';
+        return `<li${you}>${i + 1}. ${r.name} — ${r.points} pts</li>`;
+      })
+      .join("");
+  }
+}
 
     // Show intro on first load unless user opted out
  (function showIntroOnLoad() {
@@ -1019,6 +1040,7 @@ function endGame() {
   </script>
 </body>
 </html>
+
 
 
 
