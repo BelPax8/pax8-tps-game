@@ -385,6 +385,8 @@ body.hard .target img:hover {
     <input type="text" id="playerName" placeholder="Type your name" />
     <button id="saveNameBtn">OK</button>
   </div>
+<!-- Start Game button (aparece depois de salvar o nome) -->
+<button id="startGameBtn" style="display:none; margin-top:10px;">Start Game</button>
 
   <!-- HUD -->
   <div id="hud">
@@ -408,11 +410,6 @@ body.hard .target img:hover {
 </div>
 
 <div class="group">
-  <strong>Target:</strong> <span id="targetReq">0</span>
-  &nbsp;|&nbsp;
-  <strong>This level:</strong> <span id="levelScore">0</span>
-</div>
-
   <strong>Target:</strong> <span id="targetReq">0</span>
   &nbsp;|&nbsp;
   <strong>This level:</strong> <span id="levelScore">0</span>
@@ -667,8 +664,7 @@ introStartBtn.addEventListener("click", () => {
     try { localStorage.setItem("se_pax8_game_hideIntro", "1"); } catch {}
   }
   introOverlay.style.display = "none";
-  startGame();
-});
+  });
 
 
     document.addEventListener("keydown", (e) => {
@@ -677,16 +673,21 @@ introStartBtn.addEventListener("click", () => {
       }
     });
 
-    // Name capture
-    document.getElementById("saveNameBtn").addEventListener("click", () => {
-      playerName = document.getElementById("playerName").value.trim();
-      if (playerName) {
-        document.getElementById("playerForm").style.display = "none";
-        document.getElementById("hud").style.display = "flex";
-      } else {
-        alert("Please type your name to play!");
-      }
-    });
+   const startGameBtn = document.getElementById("startGameBtn");
+
+document.getElementById("saveNameBtn").addEventListener("click", () => {
+  playerName = document.getElementById("playerName").value.trim();
+  if (playerName) {
+    document.getElementById("playerForm").style.display = "none";
+    document.getElementById("hud").style.display = "flex";
+    startGameBtn.style.display = "inline-block"; // <-- Mostra o botão Start Game
+  } else {
+    alert("Please type your name to play!");
+  }
+});
+
+startGameBtn.addEventListener("click", startGame);
+
 
     // Controls
     closeModal.addEventListener("click", () => modalOverlay.style.display = "none");
@@ -877,6 +878,35 @@ const product = remainingPool.pop(); // retira um, não volta mais nesta rodada
       setTimeout(()=>fx.remove(), 800);
     }
     // End of round
+    function showPauseModal({ title, message, actionText, onAction }) {
+  // reutiliza o modal existente
+  const titleEl = modalOverlay.querySelector("h3");
+  const listEl  = rankingList; // usamos a <ol> como corpo
+  const closeBtn = document.getElementById("closeModal");
+  const playAgain = document.getElementById("playAgainBtn");
+
+  // pausa total
+  isPlaying = false;
+  clearInterval(gameInterval);
+  clearInterval(timerInterval);
+
+  // personaliza conteúdo/ações
+  titleEl.textContent = title || "Paused";
+  listEl.innerHTML = `<p style="margin:0 0 8px 0;">${message || ""}</p>`;
+
+  playAgain.textContent = actionText || "Continue";
+  playAgain.onclick = () => {
+    modalOverlay.style.display = "none";
+    if (typeof onAction === "function") onAction();
+  };
+
+  closeBtn.onclick = () => {
+    modalOverlay.style.display = "none";
+  };
+
+  modalOverlay.style.display = "flex";
+}
+
 function endLevel() {
   // para spawns/tempo atuais
   isPlaying = false;
@@ -885,82 +915,74 @@ function endLevel() {
 
   // pontos feitos nesta fase
   const earnedThisLevel = score - levelStartScore;
-
   // checa a regra dos 90%
-  if (earnedThisLevel < requiredToPass) {
-    // NÃO passou: repete a MESMA fase
-    alert(`Level ${currentLevel} failed.\nYou scored ${earnedThisLevel} pts, need ${requiredToPass} pts (90%). Try again!`);
+if (earnedThisLevel < requiredToPass) {
+  showPauseModal({
+    title: `Level ${currentLevel} failed`,
+    message: `You scored ${earnedThisLevel} pts but need ${requiredToPass} pts. Try again!`,
+    actionText: "Retry level",
+    onAction: () => {
+      // recomeça a MESMA fase apenas após o clique
+      timeLeft = DIFF.time;
+      timeDisplay.textContent = timeLeft;
+      timeBar.style.width = "100%";
+      remainingPool = buildLevelPool(currentLevel);
 
-    // recomeça a mesma fase
-    timeLeft = DIFF.time;
-    timeDisplay.textContent = timeLeft;
-    timeBar.style.width = "100%";
-    remainingPool = buildLevelPool(currentLevel);
+      levelStartScore = score;
+      const demoInPool = remainingPool.filter(p => p.demo).length;
+      const levelMult = 1 + (currentLevel - 1) * 0.10;
+      requiredToPass = Math.ceil(0.9 * demoInPool * 10 * DIFF.scoreMult * levelMult);
+      updateLevelScoreHUD();
 
-    // novo início da fase => recalcula meta
-    levelStartScore = score;
-    const demoInPool = remainingPool.filter(p => p.demo).length;
-    const levelMult = 1 + (currentLevel - 1) * 0.10;
-    requiredToPass = Math.ceil(0.9 * demoInPool * 10 * DIFF.scoreMult * levelMult);
-    updateLevelScoreHUD()
-    console.log(`Retry Level ${currentLevel} target: ${requiredToPass} pts (demo items: ${demoInPool})`);
+      // zera/ajusta estado volátil
+      streak = 0;
+      updateComboBadge();
 
-    // retoma timers
-    isPlaying = true;
-    gameInterval = setInterval(spawnTarget, DIFF.spawn);
-    timerInterval = setInterval(updateTimer, 1000);
-    return;
-  }
+      // retoma timers
+      isPlaying = true;
+      clearInterval(gameInterval);
+      clearInterval(timerInterval);
+      gameInterval = setInterval(spawnTarget, DIFF.spawn);
+      timerInterval = setInterval(updateTimer, 1000);
+    }
+  });
+  return;
+}
+ // PASSOU — vai para próxima fase
+currentLevel++;
 
-  // PASSOU — vai para próxima fase
-  currentLevel++;
+if (currentLevel > maxLevels) {
+  showWinner();
+  endGame();
+  return;
+}
 
-  if (currentLevel > maxLevels) {
-    showWinner(); // badge/tela de vencedor
-    endGame();    // ranking/modal final
-    return;
-  }
-
-  // próxima fase
+// prepara próxima fase
+const nextSetup = () => {
   timeLeft = DIFF.time;
   timeDisplay.textContent = timeLeft;
   timeBar.style.width = "100%";
   remainingPool = buildLevelPool(currentLevel);
 
-  // novo início da fase => recalcula meta
   levelStartScore = score;
   const demoInNext = remainingPool.filter(p => p.demo).length;
   const levelMultNext = 1 + (currentLevel - 1) * 0.10;
   requiredToPass = Math.ceil(0.9 * demoInNext * 10 * DIFF.scoreMult * levelMultNext);
-  updateLevelScoreHUD()
-  console.log(`Level ${currentLevel} target: ${requiredToPass} pts (demo items: ${demoInNext})`);
+  updateLevelScoreHUD();
 
   isPlaying = true;
   gameInterval = setInterval(spawnTarget, DIFF.spawn);
   timerInterval = setInterval(updateTimer, 1000);
-}
+};
 
-function showWinner() {
-  console.log("🎉 Winner! All levels completed.");
-  // depois trocamos por um modal com badge
-}
+// mostra anúncio de level up e só inicia após o clique
+showPauseModal({
+  title: `Level ${currentLevel}`,
+  message: `Difficulty scaling applied. Good luck!`,
+  actionText: "Start level",
+  onAction: nextSetup
+});
 
-    // Render both lists (modal + persistent)
-    function renderRankingLists() {
-      updateRanking(rankingList);
-      updateRanking(rankingListPersist);
-    }
-
-    // Render a leaderboard <ol>
-    function updateRanking(listEl) {
-      listEl.innerHTML = "";
-      ranking.forEach(r => {
-        const li = document.createElement("li");
-        li.textContent = `${r.name} - ${r.points} pts`;
-        if (r.last) li.classList.add("highlight");
-        listEl.appendChild(li);
-      });
-    }
 function endGame() {
   isPlaying = false;
   clearInterval(gameInterval);
@@ -978,6 +1000,7 @@ function endGame() {
   </script>
 </body>
 </html>
+
 
 
 
