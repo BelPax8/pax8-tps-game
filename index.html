@@ -1017,24 +1017,25 @@ function endGame() {
   clearInterval(gameInterval);
   clearInterval(timerInterval);
 
-  // garante que a última fase seja registrada no histórico
+  // segurança: se por algum fluxo chegarmos aqui sem empilhar a última fase
   const earnedThisLevel = score - levelStartScore;
-  if (earnedThisLevel !== 0) {
-    perLevelScores.push(earnedThisLevel);
+  if (perLevelScores.length === 0 || perLevelScores.reduce((a,b)=>a+b,0) + earnedThisLevel === score) {
+    // só empilha se fizer sentido (evita duplicar)
+    if (earnedThisLevel !== 0 && perLevelScores[perLevelScores.length - 1] !== earnedThisLevel) {
+      perLevelScores.push(earnedThisLevel);
+    }
   }
 
-  // calcula total a partir das fases
   const total = perLevelScores.reduce((a, b) => a + b, 0);
 
-  // grava no ranking
+  // grava no ranking com o NOME do jogador
   ranking.forEach(r => r.last = false);
-  ranking.push({ name: playerName, points: total, last: true });
+  ranking.push({ name: playerName || "Player", points: total, last: true });
   ranking.sort((a, b) => b.points - a.points);
 
   saveRanking();
   renderRankingLists();
 
-  // mostra modal do leaderboard
   const titleEl = modalOverlay.querySelector("h3");
   titleEl.textContent = "🏆 Leaderboard 🏆";
   playAgainBtn.textContent = "Play again";
@@ -1048,9 +1049,11 @@ function endGame() {
 }
 
 
+
   </script>
 </body>
 </html>
+
 
 
 
