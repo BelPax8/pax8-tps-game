@@ -385,37 +385,36 @@ body.hard .target img:hover {
     <input type="text" id="playerName" placeholder="Type your name" />
     <button id="saveNameBtn">OK</button>
   </div>
-<!-- Start Game button (aparece depois de salvar o nome) -->
-<button id="startGameBtn" style="display:none; margin-top:10px;">Start Game</button>
-
-  <!-- HUD -->
-  <div id="hud">
-    <div class="group"><strong>Points:</strong> <span id="score">0</span></div>
-    <div class="group"><strong>Time:</strong> <span id="time">45</span>s</div>
-    <div class="timebar-wrap"><div id="timeBar"></div></div>
-    <div class="group">
-      <label for="difficulty"><strong>Difficulty:</strong></label>
-      <select id="difficulty">
-        <option value="easy">Easy</option>
-        <option value="normal" selected>Normal</option>
-        <option value="hard">Hard</option>
-      </select>
-    </div>
-   <div class="group">
-  <span id="comboBadge">Streak: 0 | Combo: x1.00</span>
-</div>
-
-<div class="group">
-  <button id="muteBtn">🔊 Sound</button>
-</div>
-
-<div class="group">
-  <strong>Target:</strong> <span id="targetReq">0</span>
-  &nbsp;|&nbsp;
-  <strong>This level:</strong> <span id="levelScore">0</span>
-</div>
-
+<!-- HUD -->
+<div id="hud">
+  <div class="group"><strong>Points:</strong> <span id="score">0</span></div>
+  <div class="group"><strong>Time:</strong> <span id="time">45</span>s</div>
+  <div class="timebar-wrap"><div id="timeBar"></div></div>
+  <div class="group">
+    <label for="difficulty"><strong>Difficulty:</strong></label>
+    <select id="difficulty">
+      <option value="easy">Easy</option>
+      <option value="normal" selected>Normal</option>
+      <option value="hard">Hard</option>
+    </select>
   </div>
+  <div class="group">
+    <span id="comboBadge">Streak: 0 | Combo: x1.00</span>
+  </div>
+  <div class="group">
+    <button id="muteBtn">🔊 Sound</button>
+  </div>
+  <div class="group">
+    <strong>Target:</strong> <span id="targetReq">0</span>
+    &nbsp;|&nbsp;
+    <strong>This level:</strong> <span id="levelScore">0</span>
+  </div>
+
+  <!-- MOVIDO para dentro do HUD -->
+  <div class="group">
+    <button id="startGameBtn" style="display:none;">Start Game</button>
+  </div>
+</div>
 
   <!-- Game area -->
   <div id="gameArea"></div>
@@ -1064,6 +1063,7 @@ function endGame() {
   </script>
 </body>
 </html>
+
 
 
 
