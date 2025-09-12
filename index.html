@@ -691,7 +691,6 @@ startGameBtn.addEventListener("click", startGame);
 
     // Controls
     closeModal.addEventListener("click", () => modalOverlay.style.display = "none");
-    playAgainBtn.addEventListener("click", () => { modalOverlay.style.display = "none"; startGame(); });
     function shuffle(arr) {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) {
@@ -921,30 +920,31 @@ if (earnedThisLevel < requiredToPass) {
     title: `Level ${currentLevel} failed`,
     message: `You scored ${earnedThisLevel} pts but need ${requiredToPass} pts. Try again!`,
     actionText: "Retry level",
-    onAction: () => {
-      // recomeça a MESMA fase apenas após o clique
-      timeLeft = DIFF.time;
-      timeDisplay.textContent = timeLeft;
-      timeBar.style.width = "100%";
-      remainingPool = buildLevelPool(currentLevel);
+   onAction: () => {
+  // limpa alvos antigos antes de reiniciar a mesma fase
+  gameArea.innerHTML = "";   // <<-- ADICIONE AQUI
 
-      levelStartScore = score;
-      const demoInPool = remainingPool.filter(p => p.demo).length;
-      const levelMult = 1 + (currentLevel - 1) * 0.10;
-      requiredToPass = Math.ceil(0.9 * demoInPool * 10 * DIFF.scoreMult * levelMult);
-      updateLevelScoreHUD();
+  timeLeft = DIFF.time;
+  timeDisplay.textContent = timeLeft;
+  timeBar.style.width = "100%";
+  remainingPool = buildLevelPool(currentLevel);
 
-      // zera/ajusta estado volátil
-      streak = 0;
-      updateComboBadge();
+  levelStartScore = score;
+  const demoInPool = remainingPool.filter(p => p.demo).length;
+  const levelMult = 1 + (currentLevel - 1) * 0.10;
+  requiredToPass = Math.ceil(0.9 * demoInPool * 10 * DIFF.scoreMult * levelMult);
+  updateLevelScoreHUD();
 
-      // retoma timers
-      isPlaying = true;
-      clearInterval(gameInterval);
-      clearInterval(timerInterval);
-      gameInterval = setInterval(spawnTarget, DIFF.spawn);
-      timerInterval = setInterval(updateTimer, 1000);
-    }
+  streak = 0;
+  updateComboBadge();
+
+  isPlaying = true;
+  clearInterval(gameInterval);
+  clearInterval(timerInterval);
+  gameInterval = setInterval(spawnTarget, DIFF.spawn);
+  timerInterval = setInterval(updateTimer, 1000);
+}
+
   });
   return;
 }
@@ -959,6 +959,8 @@ if (currentLevel > maxLevels) {
 
 // prepara próxima fase
 const nextSetup = () => {
+  gameArea.innerHTML = "";   // <<-- ADICIONE AQUI
+
   timeLeft = DIFF.time;
   timeDisplay.textContent = timeLeft;
   timeBar.style.width = "100%";
@@ -997,11 +999,23 @@ function endGame() {
   saveRanking();
   renderRankingLists();
 
+  // Configura o modal para o leaderboard
+  const titleEl = modalOverlay.querySelector("h3");
+  titleEl.textContent = "🏆 Leaderboard 🏆";
+  playAgainBtn.textContent = "Play again";
+  playAgainBtn.onclick = () => {
+    modalOverlay.style.display = "none";
+    startGame();
+  };
+  closeModal.onclick = () => { modalOverlay.style.display = "none"; };
+
   modalOverlay.style.display = "flex";
 }
+
   </script>
 </body>
 </html>
+
 
 
 
