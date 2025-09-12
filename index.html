@@ -849,9 +849,6 @@ const product = remainingPool.pop(); // retira um, não volta mais nesta rodada
   const TARGET_SIZE = 110;
   target.style.left = Math.random() * (gameArea.clientWidth  - TARGET_SIZE) + "px";
   target.style.top  = Math.random() * (gameArea.clientHeight - TARGET_SIZE) + "px";
-
-  // clique: pontuação + combo/dificuldade
-  target.addEven
  // clique: pontuação + combo/dificuldade
 target.addEventListener("click", (ev) => {
   const base = product.demo ? 10 : -5;
@@ -1079,6 +1076,7 @@ function endGame() {
   </script>
 </body>
 </html>
+
 
 
 
