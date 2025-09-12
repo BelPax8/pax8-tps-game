@@ -64,17 +64,7 @@
       background: #666;
       cursor: not-allowed;
     }
-    #gameArea {
-      width: 100%;
-      max-width: 1000px;
-      height: 560px;
-      background: white;
-      border: 2px solid #333;
-      position: relative;
-      overflow: hidden;
-    }
-    /* Cada alvo - só a logo visível */
-/* Container do alvo - totalmente transparente e sem tamanho fixo */
+   /* Container do alvo - totalmente transparente e sem tamanho fixo */
 .target {
   position: absolute;
   cursor: pointer;
@@ -240,24 +230,7 @@ body.hard .target img:hover {
       rgba(0,0,0,0.75) 100%
     );
 }
-
 /* Conteúdo centralizado */
-#welcomeContent {
-  position: relative; /* fica acima do overlay escuro */
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  text-align: center;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-  width: 400px;
-  max-width: 90%;
-}
-
-#welcomeContent h1 {
-  margin-top: 0;
-  margin-bottom: 12px;
-}
-
 #welcomeStartBtn {
   background: #4CAF50;
   color: white;
@@ -428,9 +401,11 @@ body.hard .target img:hover {
     </div>
     <div class="group"><span id="comboBadge">Streak: 0 | Combo: x1.00</span></div>
     <div class="group">
-      <button id="muteBtn" title="Toggle sound (M)">🔊 Sound</button>
-      <button id="startBtn">Start Game</button>
-    </div>
+  <strong>Target:</strong> <span id="targetReq">0</span>
+  &nbsp;|&nbsp;
+  <strong>This level:</strong> <span id="levelScore">0</span>
+</div>
+
   </div>
 
   <!-- Game area -->
@@ -587,9 +562,19 @@ preloadLogos(products);
     let timerInterval;
     let ranking = []; // {name, points, last}
     let streak = 0;
+    // Level gating (90% rule)
+    let levelStartScore = 0;   // score no início da fase
+    let requiredToPass = 0;    // pontos mínimos para passar a fase
     let isPlaying = false;       // (se já adicionou antes, mantenha)
     let remainingPool = [];      // baralho da rodada (sem reposição)
 
+// Levels
+let currentLevel = 1;
+const maxLevels = 10;
+
+// Listas derivadas (já com base no demo: true/false)
+const vendorsDemo   = products.filter(p => p.demo);
+const vendorsNoDemo = products.filter(p => !p.demo);
 
     // Elements
     const startBtn = document.getElementById("startBtn");
@@ -604,6 +589,8 @@ preloadLogos(products);
     const playAgainBtn = document.getElementById("playAgainBtn");
     const muteBtn = document.getElementById("muteBtn");
     const comboBadge = document.getElementById("comboBadge");
+    const targetReqEl  = document.getElementById("targetReq");
+    const levelScoreEl = document.getElementById("levelScore");
 
     // Intro elements
     const introOverlay   = document.getElementById("introOverlay");
@@ -652,15 +639,19 @@ welcomeStartBtn.addEventListener("click", () => {
     renderRankingLists();
 
     // Show intro on first load unless user opted out
-    (function showIntroOnLoad() {
-      try {
-        const hide = localStorage.getItem("se_pax8_game_hideIntro") === "1";
-        if (!hide) introOverlay.style.display = "flex";
-      } catch {
-        introOverlay.style.display = "flex";
-      }
-    })();
-    introStartBtn.addEventListener("click", () => {
+  (function showIntroOnLoad() {
+  try {
+    const hide = localStorage.getItem("se_pax8_game_hideIntro") === "1";
+    // só mostra a intro automaticamente se Welcome NÃO estiver visível:
+    const welcomeVisible = document.getElementById("welcomeOverlay").style.display !== "none";
+    if (!hide && !welcomeVisible) {
+      introOverlay.style.display = "flex";
+    }
+  } catch {
+    // fallback: não abre automaticamente se o welcome está visível
+  }
+})();
+tartBtn.addEventListener("click", () => {
       if (introDontShow.checked) {
         try { localStorage.setItem("se_pax8_game_hideIntro", "1"); } catch {}
       }
@@ -695,41 +686,85 @@ welcomeStartBtn.addEventListener("click", () => {
   }
   return a;
 }
+   // Retorna a proporção de vendors com demo para um nível:
+// L1 = 0.8 (80%), … L10 = 0.2 (20%)
+function getDemoRatio(level) {
+  const start = 0.8, end = 0.2;
+  const t = Math.min(Math.max((level - 1) / (maxLevels - 1), 0), 1);
+  return start + (end - start) * t;
+}
+
+// Monta o "baralho" da fase a partir da proporção
+function buildLevelPool(level) {
+  const ratio = getDemoRatio(level);
+
+  // Tamanho do baralho por fase (ajustável). Use algo menor se quiser fases rápidas.
+  const totalTargets = Math.min(products.length, 40);
+
+  const demoCount   = Math.max(1, Math.round(totalTargets * ratio));
+  const noDemoCount = Math.max(1, totalTargets - demoCount);
+
+  const pickDemo   = shuffle([...vendorsDemo]).slice(0, Math.min(demoCount, vendorsDemo.length));
+  const pickNoDemo = shuffle([...vendorsNoDemo]).slice(0, Math.min(noDemoCount, vendorsNoDemo.length));
+
+  return shuffle([...pickDemo, ...pickNoDemo]);
+}
+
+function updateLevelScoreHUD() {
+  const earnedThisLevel = score - levelStartScore;
+  levelScoreEl.textContent = earnedThisLevel;
+  targetReqEl.textContent  = requiredToPass;
+}
 
     // Start round
-    function startGame() {
-       // aplica classe de dificuldade no body
+function startGame() {
+  // aplica classe de dificuldade no body (para o hover colorido)
   document.body.classList.remove("easy", "normal", "hard");
   document.body.classList.add(document.getElementById("difficulty").value);
 
-       DIFF = getDifficultyParams();
-      score = 0;
-      streak = 0;
-      updateComboBadge();
-      timeLeft = DIFF.time;
-      timeDisplay.textContent = timeLeft;
-      timeBar.style.width = "100%";
-      scoreDisplay.textContent = score;
-      startBtn.disabled = true;
-      gameArea.innerHTML = "";
-// monta o baralho desta rodada (sem repetição)
-      remainingPool = shuffle(products);
+  DIFF = getDifficultyParams();
+  score = 0;
+  streak = 0;
+  updateComboBadge();
+function updateLevelScoreHUD() {
+  const earnedThisLevel = score - levelStartScore;
+  levelScoreEl.textContent = earnedThisLevel;
+  targetReqEl.textContent  = requiredToPass;
+}
+  // NOVO: começa na fase 1
+  currentLevel = 1;
 
-      isPlaying = true;
+  timeLeft = DIFF.time;
+  timeDisplay.textContent = timeLeft;
+  timeBar.style.width = "100%";
+  scoreDisplay.textContent = score;
+  startBtn.disabled = true;
+  gameArea.innerHTML = "";
 
-      clearInterval(gameInterval);
-      clearInterval(timerInterval);
-      gameInterval = setInterval(spawnTarget, DIFF.spawn);
-      timerInterval = setInterval(updateTimer, 1000);
-    }
+  // NOVO: monta o baralho da fase 1 (sem repetição)
+  remainingPool = buildLevelPool(currentLevel);
+  isPlaying = true;
+// registra score inicial da fase e calcula meta (90% do máximo possível sem combo)
+levelStartScore = score;
 
+const demoInPool = remainingPool.filter(p => p.demo).length;
+const levelMult = 1 + (currentLevel - 1) * 0.10; // +10% por fase
+requiredToPass = Math.ceil(0.9 * demoInPool * 10 * DIFF.scoreMult * levelMult);
+
+// (10 = base de acerto; ignoramos combo para a meta)
+console.log(`Level ${currentLevel} target: ${requiredToPass} pts (demo items: ${demoInPool})`);
+  clearInterval(gameInterval);
+  clearInterval(timerInterval);
+  gameInterval = setInterval(spawnTarget, DIFF.spawn);
+  timerInterval = setInterval(updateTimer, 1000);
+}
     // Timer
     function updateTimer() {
       timeLeft--;
       timeDisplay.textContent = timeLeft;
       const pct = Math.max(0, (timeLeft / DIFF.time) * 100);
       timeBar.style.width = pct + "%";
-      if (timeLeft <= 0) endGame();
+      if (timeLeft <= 0) endLevel();
     }
 
     // Empty click penalty (-1)
@@ -737,6 +772,7 @@ welcomeStartBtn.addEventListener("click", () => {
   if (!isPlaying) return;            // <— evita penalizar antes/depois do jogo
   if (e.target !== gameArea) return; // clicou num alvo, ignora aqui
   score -= 1;
+      updateLevelScoreHUD();
   scoreDisplay.textContent = score;
   play("sndMiss");
   showClickFx(e);
@@ -762,8 +798,7 @@ function spawnTarget() {
  // const product = products[Math.floor(Math.random() * products.length)];
   if (!isPlaying) return;
   if (remainingPool.length === 0) {
-  // acabaram os vendors — termina a partida mais cedo
-  endGame();
+  endLevel(); // avança de fase em vez de encerrar o jogo
   return;
 }
 const product = remainingPool.pop(); // retira um, não volta mais nesta rodada
@@ -798,9 +833,11 @@ const product = remainingPool.pop(); // retira um, não volta mais nesta rodada
     }
     const combo = 1 + Math.floor(streak / 5) * 0.25;
     const mult  = product.demo ? (combo * DIFF.scoreMult) : 1;
-    const points = Math.round(base * mult);
+    const levelMult = 1 + (currentLevel - 1) * 0.10; // +10% por fase
+    const points = Math.round(base * mult * levelMult);
 
     score += points;
+    updateLevelScoreHUD();
     scoreDisplay.textContent = score;
     flashPoints(target, points, product.demo, combo, DIFF.scoreMult);
     updateComboBadge(product.demo ? combo * DIFF.scoreMult : 1);
@@ -833,21 +870,73 @@ const product = remainingPool.pop(); // retira um, não volta mais nesta rodada
       setTimeout(()=>fx.remove(), 800);
     }
     // End of round
-    function endGame() {
-      isPlaying = false;
-      clearInterval(gameInterval);
-      clearInterval(timerInterval);
-      startBtn.disabled = false;
-      // mark only current player as "last"
-      ranking.forEach(r => r.last = false);
-      ranking.push({ name: playerName, points: score, last: true });
-      ranking.sort((a, b) => b.points - a.points);
+function endLevel() {
+  // para spawns/tempo atuais
+  isPlaying = false;
+  clearInterval(gameInterval);
+  clearInterval(timerInterval);
 
-      saveRanking();
-      renderRankingLists();
+  // pontos feitos nesta fase
+  const earnedThisLevel = score - levelStartScore;
 
-      modalOverlay.style.display = "flex";
-    }
+  // checa a regra dos 90%
+  if (earnedThisLevel < requiredToPass) {
+    // NÃO passou: repete a MESMA fase
+    alert(`Level ${currentLevel} failed.\nYou scored ${earnedThisLevel} pts, need ${requiredToPass} pts (90%). Try again!`);
+
+    // recomeça a mesma fase
+    timeLeft = DIFF.time;
+    timeDisplay.textContent = timeLeft;
+    timeBar.style.width = "100%";
+    remainingPool = buildLevelPool(currentLevel);
+
+    // novo início da fase => recalcula meta
+    levelStartScore = score;
+    const demoInPool = remainingPool.filter(p => p.demo).length;
+    const levelMult = 1 + (currentLevel - 1) * 0.10;
+    requiredToPass = Math.ceil(0.9 * demoInPool * 10 * DIFF.scoreMult * levelMult);
+    updateLevelScoreHUD()
+    console.log(`Retry Level ${currentLevel} target: ${requiredToPass} pts (demo items: ${demoInPool})`);
+
+    // retoma timers
+    isPlaying = true;
+    gameInterval = setInterval(spawnTarget, DIFF.spawn);
+    timerInterval = setInterval(updateTimer, 1000);
+    return;
+  }
+
+  // PASSOU — vai para próxima fase
+  currentLevel++;
+
+  if (currentLevel > maxLevels) {
+    showWinner(); // badge/tela de vencedor
+    endGame();    // ranking/modal final
+    return;
+  }
+
+  // próxima fase
+  timeLeft = DIFF.time;
+  timeDisplay.textContent = timeLeft;
+  timeBar.style.width = "100%";
+  remainingPool = buildLevelPool(currentLevel);
+
+  // novo início da fase => recalcula meta
+  levelStartScore = score;
+  const demoInNext = remainingPool.filter(p => p.demo).length;
+  const levelMultNext = 1 + (currentLevel - 1) * 0.10;
+  requiredToPass = Math.ceil(0.9 * demoInNext * 10 * DIFF.scoreMult * levelMultNext);
+  updateLevelScoreHUD()
+  console.log(`Level ${currentLevel} target: ${requiredToPass} pts (demo items: ${demoInNext})`);
+
+  isPlaying = true;
+  gameInterval = setInterval(spawnTarget, DIFF.spawn);
+  timerInterval = setInterval(updateTimer, 1000);
+}
+
+function showWinner() {
+  console.log("🎉 Winner! All levels completed.");
+  // depois trocamos por um modal com badge
+}
 
     // Render both lists (modal + persistent)
     function renderRankingLists() {
@@ -865,9 +954,30 @@ const product = remainingPool.pop(); // retira um, não volta mais nesta rodada
         listEl.appendChild(li);
       });
     }
+    function endGame() {
+  // libera timers
+  isPlaying = false;
+  clearInterval(gameInterval);
+  clearInterval(timerInterval);
+
+  // marca apenas o jogador atual como "last"
+  ranking.forEach(r => r.last = false);
+  ranking.push({ name: playerName, points: score, last: true });
+  ranking.sort((a, b) => b.points - a.points);
+
+  saveRanking();
+  renderRankingLists();
+
+  // mostra modal final
+  modalOverlay.style.display = "flex";
+}
+
   </script>
 </body>
 </html>
+
+
+
 
 
 
