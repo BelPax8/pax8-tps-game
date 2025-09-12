@@ -399,8 +399,20 @@ body.hard .target img:hover {
         <option value="hard">Hard</option>
       </select>
     </div>
-    <div class="group"><span id="comboBadge">Streak: 0 | Combo: x1.00</span></div>
-    <div class="group">
+   <div class="group">
+  <span id="comboBadge">Streak: 0 | Combo: x1.00</span>
+</div>
+
+<div class="group">
+  <button id="muteBtn">🔊 Sound</button>
+</div>
+
+<div class="group">
+  <strong>Target:</strong> <span id="targetReq">0</span>
+  &nbsp;|&nbsp;
+  <strong>This level:</strong> <span id="levelScore">0</span>
+</div>
+
   <strong>Target:</strong> <span id="targetReq">0</span>
   &nbsp;|&nbsp;
   <strong>This level:</strong> <span id="levelScore">0</span>
@@ -577,7 +589,6 @@ const vendorsDemo   = products.filter(p => p.demo);
 const vendorsNoDemo = products.filter(p => !p.demo);
 
     // Elements
-    const startBtn = document.getElementById("startBtn");
     const scoreDisplay = document.getElementById("score");
     const timeDisplay = document.getElementById("time");
     const timeBar = document.getElementById("timeBar");
@@ -651,12 +662,15 @@ welcomeStartBtn.addEventListener("click", () => {
   }
 })();
 
-tartBtn.addEventListener("click", () => {
-      if (introDontShow.checked) {
-        try { localStorage.setItem("se_pax8_game_hideIntro", "1"); } catch {}
-      }
-      introOverlay.style.display = "none";
-    });
+introStartBtn.addEventListener("click", () => {
+  if (introDontShow.checked) {
+    try { localStorage.setItem("se_pax8_game_hideIntro", "1"); } catch {}
+  }
+  introOverlay.style.display = "none";
+  startGame();
+});
+
+
     document.addEventListener("keydown", (e) => {
       if (introOverlay.style.display === "flex" && e.key === "Escape") {
         introOverlay.style.display = "none";
@@ -675,7 +689,6 @@ tartBtn.addEventListener("click", () => {
     });
 
     // Controls
-    startBtn.addEventListener("click", startGame);
     closeModal.addEventListener("click", () => modalOverlay.style.display = "none");
     playAgainBtn.addEventListener("click", () => { modalOverlay.style.display = "none"; startGame(); });
     function shuffle(arr) {
@@ -733,7 +746,6 @@ function startGame() {
   timeDisplay.textContent = timeLeft;
   timeBar.style.width = "100%";
   scoreDisplay.textContent = score;
-  startBtn.disabled = true;
   gameArea.innerHTML = "";
 
   // NOVO: monta o baralho da fase 1 (sem repetição)
@@ -966,6 +978,7 @@ function endGame() {
   </script>
 </body>
 </html>
+
 
 
 
