@@ -176,7 +176,41 @@
     }
     /* Mute indicator */
     #muteBtn.muted { background: #888 !important; }
+/* Welcome Screen */
+#welcomeOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
 
+#welcomeContent {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  width: 400px;
+  max-width: 90%;
+}
+
+#welcomeContent h1 {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+#welcomeStartBtn {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  font-size: 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
     /* Intro / Instructions modal */
     #introOverlay {
       position: fixed;
@@ -222,6 +256,17 @@
   </style>
 </head>
 <body>
+<!-- Welcome Screen -->
+<div id="welcomeOverlay">
+  <div id="welcomeContent">
+    <h1>🎯 Welcome to the TPS Game 🎯</h1>
+    <p>
+      This is a fun way to learn which vendors TPS provides
+      <strong>demos</strong> and <strong>onboardings</strong> for.
+    </p>
+    <button id="welcomeStartBtn">Click here to start</button>
+  </div>
+</div>
 
   <!-- Intro / Instructions -->
   <div id="introOverlay">
@@ -480,7 +525,14 @@ preloadLogos(products);
     const introOverlay   = document.getElementById("introOverlay");
     const introStartBtn  = document.getElementById("introStartBtn");
     const introDontShow  = document.getElementById("introDontShow");
+// Welcome screen elements
+const welcomeOverlay  = document.getElementById("welcomeOverlay");
+const welcomeStartBtn = document.getElementById("welcomeStartBtn");
 
+welcomeStartBtn.addEventListener("click", () => {
+  welcomeOverlay.style.display = "none"; // esconde tela de boas-vindas
+  introOverlay.style.display = "flex";   // mostra instruções
+});
     // Sound helpers
     let muted = false;
     function play(soundId) {
