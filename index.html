@@ -757,9 +757,12 @@ function startGame() {
 
   DIFF = getDifficultyParams();
 
-  score = 0;                // zera total APENAS aqui
-  perLevelScores = [];      // limpa breakdown
+  // resetes principais
+  score = 0;
   streak = 0;
+  perLevelScores = [];      // <<< IMPORTANTE: zera o histórico
+  currentLevel = 1;
+
   updateComboBadge();
 
   currentLevel = 1;
@@ -1053,6 +1056,7 @@ function endGame() {
   </script>
 </body>
 </html>
+
 
 
 
