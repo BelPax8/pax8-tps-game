@@ -332,7 +332,16 @@ body.hard .target img:hover {
   position: relative;
   z-index: 1; /* ranking fica por baixo das overlays */
 }
-  </style>
+    </style>
+
+  <!-- ADICIONADO: Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://jzvombwgckgjmizzhinc.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6dm9tYndnY2tnam1penpoaW5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NzQ2MjcsImV4cCI6MjA3MzM1MDYyN30.u57i3_aNLgBsx2ZmKQE2l4GvbBBviei4EF9UpXa86ds";
+    const TABLE = "Raking"; // nome da tabela no Supabase
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  </script>
 </head>
 <body>
 <!-- Welcome Screen -->
@@ -1064,7 +1073,6 @@ function endGame() {
   <script type="module">
   import { createClient } from "https://esm.sh/@supabase/supabase-js";
 
-  // >>> SUA URL e CHAVE (as que você me passou)
   const SUPABASE_URL = "https://jzvombwgckgjmizzhinc.supabase.co";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6dm9tYndnY2tnam1penpoaW5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NzQ2MjcsImV4cCI6MjA3MzM1MDYyN30.u57i3_aNLgBsx2ZmKQE2l4GvbBBviei4EF9UpXa86ds";
 
@@ -1101,6 +1109,7 @@ function endGame() {
 </script>
 </body>
 </html>
+
 
 
 
