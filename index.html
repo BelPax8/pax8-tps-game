@@ -1,690 +1,637 @@
 <!DOCTYPE html>
-<html lang="en-US"> 
+<html lang="en-US">
 <head>
   <meta charset="UTF-8" />
   <title>The TPS Pax8 Game</title>
+
+  <!-- Supabase v2 (obrigatório para o ranking global) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
-   body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: url("images/welcome-bg.jpg") no-repeat center center fixed;
-  background-size: cover;
-}
-#gameArea {
-  width: 100%;
-  max-width: 1000px;
-  height: 560px;
-  background: rgba(255, 255, 255, 0.85);
-  border: 2px solid #333;
-  border-radius: 8px;
-  backdrop-filter: blur(4px);
-  position: relative;
-  overflow: hidden;
-}
-#playerForm { margin-top: 20px; padding: 10px; }
-#hud {
-  display: none;
-  align-items: center;
-  gap: 12px;
-  background: #333;
-  color: white;
-  padding: 10px;
-  width: 100%;
-  max-width: 1000px;
-  box-sizing: border-box;
-  flex-wrap: wrap;
-}
-#hud .group { display: flex; align-items: center; gap: 8px; }
-#hud button, #hud select {
-  background: #4CAF50; color: white; border: none; padding: 6px 10px; cursor: pointer; border-radius: 6px;
-}
-#hud select { background: #555; }
-#hud button:disabled { background: #666; cursor: not-allowed; }
-.target { position: absolute; cursor: pointer; display: inline-flex; justify-content: center; align-items: center; background: none !important; border: none !important; padding: 0; margin: 0; box-sizing: border-box; user-select: none; }
-.target img {
-  display: block; width: 110px; height: 110px; object-fit: contain;
-  border: 2px solid #000; border-radius: 8px; background: white;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25); user-select: none;
-  transition: transform 0.2s ease-in-out;
-}
-.target img:hover { transform: scale(1.1); box-shadow: 0 6px 16px rgba(0,0,0,0.35), 0 0 12px rgba(76,175,80,0.6); }
-body.easy .target img:hover   { box-shadow: 0 6px 16px rgba(0,0,0,0.35), 0 0 12px rgba(76,175,80,0.6); }
-body.normal .target img:hover { box-shadow: 0 6px 16px rgba(0,0,0,0.35), 0 0 12px rgba(255,193,7,0.6); }
-body.hard .target img:hover   { box-shadow: 0 6px 16px rgba(0,0,0,0.35), 0 0 12px rgba(244,67,54,0.7); }
-.timebar-wrap { flex: 1; height: 10px; background: #555; border-radius: 6px; overflow: hidden; min-width: 200px; }
-#timeBar { height: 100%; width: 100%; background: #4CAF50; transition: width 0.25s linear; }
-#modalOverlay {
-  position: fixed; inset: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 999; padding: 16px; box-sizing: border-box;
-}
-#modalContent {
-  background: white; padding: 20px; border-radius: 12px; width: 380px; max-height: 70vh; overflow-y: auto; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.35); animation: pop 0.25s ease-out;
-}
-#modalContent h3 { margin-top: 0; }
-@keyframes pop { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-.modal-actions { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
-.btn { background: #333; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
-.btn.primary { background: #4CAF50; }
-.highlight { color: #e63946; font-weight: bold; }
-.highlight::after { content: " (you)"; font-size: 0.9em; font-style: italic; margin-left: 4px; }
-#ranking { margin-top: 20px; background: #fff; border: 2px solid #333; padding: 10px; width: 100%; max-width: 1000px; box-sizing: border-box; }
-#comboBadge { background: #222; border: 1px solid #666; padding: 4px 8px; border-radius: 6px; font-size: 12px; }
-#welcomeOverlay {
-  position: fixed; inset: 0; background: url("images/welcome-bg.jpg") center/cover no-repeat;
-  display: flex; justify-content: center; align-items: center; z-index: 2000;
-}
-#welcomeOverlay::before {
-  content: ""; position: absolute; inset: 0;
-  background: linear-gradient(180deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.35) 40%, rgba(0,0,0,0.35) 60%, rgba(0,0,0,0.75) 100%);
-}
-#welcomeStartBtn { background: #4CAF50; color: white; border: none; padding: 10px 14px; font-size: 16px; border-radius: 8px; cursor: pointer; }
-#welcomeContent {
-  background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.3); padding: 20px; border-radius: 12px; text-align: center;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.4); width: 400px; max-width: 90%; color: white;
-}
-#welcomeContent h1 { margin-top: 0; margin-bottom: 12px; }
-#introOverlay {
-  position: fixed; inset: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 16px; box-sizing: border-box;
-}
-#introContent { background: #fff; padding: 20px; border-radius: 12px; width: 520px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.35); animation: pop 0.25s ease-out; }
-#introContent h2 { margin: 0 0 8px; }
-#introContent ul { margin: 10px 0 0 18px; }
-#introContent li { margin: 6px 0; }
-#introActions { display: flex; gap: 10px; justify-content: space-between; align-items: center; margin-top: 14px; }
-#introStartBtn { background: #4CAF50; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
-.logo-fallback {
-  display: block; width: 110px; height: 110px; line-height: 110px; text-align: center; font-weight: bold;
-  border: 2px solid #000; border-radius: 8px; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.25); user-select: none;
-}
-#introOverlay { z-index: 2000; }
-#welcomeOverlay { z-index: 2100; }
-#ranking { position: relative; z-index: 1; }
+    /* === seu CSS original (mantive tudo) === */
+    body{font-family:Arial,sans-serif;margin:0;display:flex;flex-direction:column;align-items:center;background:url("images/welcome-bg.jpg") no-repeat center center fixed;background-size:cover}
+    #gameArea{width:100%;max-width:1000px;height:560px;background:rgba(255,255,255,.85);border:2px solid #333;border-radius:8px;backdrop-filter:blur(4px);position:relative;overflow:hidden}
+    #playerForm{margin-top:20px;padding:10px}
+    #hud{display:none;align-items:center;gap:12px;background:#333;color:#fff;padding:10px;width:100%;max-width:1000px;box-sizing:border-box;flex-wrap:wrap}
+    #hud .group{display:flex;align-items:center;gap:8px}
+    #hud button,#hud select{background:#4CAF50;color:#fff;border:none;padding:6px 10px;cursor:pointer;border-radius:6px}
+    #hud select{background:#555}
+    #hud button:disabled{background:#666;cursor:not-allowed}
+    .target{position:absolute;cursor:pointer;display:inline-flex;justify-content:center;align-items:center;background:none!important;border:none!important;padding:0;margin:0;box-sizing:border-box;user-select:none}
+    .target img{display:block;width:110px;height:110px;object-fit:contain;border:2px solid #000;border-radius:8px;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.25);user-select:none;transition:transform .2s ease-in-out}
+    .target img:hover{transform:scale(1.1);box-shadow:0 6px 16px rgba(0,0,0,.35),0 0 12px rgba(76,175,80,.6)}
+    body.easy .target img:hover{box-shadow:0 6px 16px rgba(0,0,0,.35),0 0 12px rgba(76,175,80,.6)}
+    body.normal .target img:hover{box-shadow:0 6px 16px rgba(0,0,0,.35),0 0 12px rgba(255,193,7,.6)}
+    body.hard .target img:hover{box-shadow:0 6px 16px rgba(0,0,0,.35),0 0 12px rgba(244,67,54,.7)}
+    .timebar-wrap{flex:1;height:10px;background:#555;border-radius:6px;overflow:hidden;min-width:200px}
+    #timeBar{height:100%;width:100%;background:#4CAF50;transition:width .25s linear}
+    #modalOverlay{position:fixed;inset:0;width:100%;height:100%;background:rgba(0,0,0,.6);display:none;justify-content:center;align-items:center;z-index:999;padding:16px;box-sizing:border-box}
+    #modalContent{background:#fff;padding:20px;border-radius:12px;width:380px;max-height:70vh;overflow-y:auto;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.35);animation:pop .25s ease-out}
+    #modalContent h3{margin-top:0}
+    @keyframes pop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+    .modal-actions{display:flex;gap:8px;justify-content:center;margin-top:12px}
+    .btn{background:#333;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer}
+    .btn.primary{background:#4CAF50}
+    .highlight{color:#e63946;font-weight:bold}
+    .highlight::after{content:" (you)";font-size:.9em;font-style:italic;margin-left:4px}
+    #ranking{margin-top:20px;background:#fff;border:2px solid #333;padding:10px;width:100%;max-width:1000px;box-sizing:border-box}
+    #comboBadge{background:#222;border:1px solid #666;padding:4px 8px;border-radius:6px;font-size:12px}
+    #muteBtn.muted{background:#888!important}
+    #welcomeOverlay{position:fixed;inset:0;background:url("images/welcome-bg.jpg") center/cover no-repeat;display:flex;justify-content:center;align-items:center;z-index:2100}
+    #welcomeOverlay::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.75) 0%,rgba(0,0,0,.35) 40%,rgba(0,0,0,.35) 60%,rgba(0,0,0,.75) 100%)}
+    #welcomeStartBtn{background:#4CAF50;color:#fff;border:none;padding:10px 14px;font-size:16px;border-radius:8px;cursor:pointer}
+    #welcomeContent{background:rgba(255,255,255,.15);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.3);padding:20px;border-radius:12px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.4);width:400px;max-width:90%;color:#fff}
+    #welcomeContent h1{margin-top:0;margin-bottom:12px}
+    #introOverlay{position:fixed;inset:0;width:100%;height:100%;background:rgba(0,0,0,.6);display:none;justify-content:center;align-items:center;z-index:2000;padding:16px;box-sizing:border-box}
+    #introContent{background:#fff;padding:20px;border-radius:12px;width:520px;max-height:80vh;overflow-y:auto;box-shadow:0 10px 30px rgba(0,0,0,.35);animation:pop .25s ease-out}
+    #introContent h2{margin:0 0 8px}#introContent ul{margin:10px 0 0 18px}#introContent li{margin:6px 0}
+    #introActions{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-top:14px}
+    #introStartBtn{background:#4CAF50;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer}
+    .logo-fallback{display:block;width:110px;height:110px;line-height:110px;text-align:center;font-weight:bold;border:2px solid #000;border-radius:8px;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.25);user-select:none}
+    #ranking{position:relative;z-index:1}
   </style>
 </head>
 <body>
-<!-- Welcome Screen -->
-<div id="welcomeOverlay">
-  <div id="welcomeContent">
-    <h1>🎯 Welcome to the TPS Game 🎯</h1>
-    <p>This is a fun way to learn which vendors TPS provides <strong>demos</strong> and <strong>onboardings</strong> for.</p>
-    <button id="welcomeStartBtn">Click here to start</button>
-  </div>
-</div>
 
-<!-- Intro / Instructions -->
-<div id="introOverlay">
-  <div id="introContent">
-    <h2>How to Play</h2>
-    <p>The goal is to learn, in a playful way, which vendors the TPS team <strong>supports with demos and onboarding</strong> and which ones are not covered.</p>
-
-    <h3>Objective</h3>
-    <ul>
-      <li>Click the product tiles that are <strong>demo/onboarding supported</strong>.</li>
-      <li>Avoid clicking products that are <strong>not</strong> supported.</li>
-    </ul>
-
-    <h3>Scoring</h3>
-    <ul>
-      <li><strong>+10 pts</strong> for a supported vendor (correct click).</li>
-      <li><strong>-5 pts</strong> for a non-supported vendor (wrong click).</li>
-      <li><strong>-1 pt</strong> for clicking empty space (miss).</li>
-    </ul>
-
-    <h3>Combo / Streak</h3>
-    <ul>
-      <li>Every 5 consecutive correct hits increases a <strong>combo</strong> (+25% per step).</li>
-      <li>Missing or a wrong click resets the streak.</li>
-    </ul>
-
-    <h3>Difficulty</h3>
-    <ul>
-      <li><strong>Easy</strong>: more time, slower spawn, targets stay longer.</li>
-      <li><strong>Normal</strong>: default settings.</li>
-      <li><strong>Hard</strong>: less time, faster spawn, shorter target life, and a <strong>1.5× score multiplier</strong> on correct hits.</li>
-    </ul>
-
-    <h3>Timer</h3>
-    <ul><li>The green bar shows the time remaining for the level.</li></ul>
-
-    <h3>Leaderboard</h3>
-    <ul>
-      <li>Scores are saved to a global leaderboard.</li>
-      <li>The last player is highlighted in red with “(you)”.</li>
-    </ul>
-
-    <div id="introActions">
-      <label><input type="checkbox" id="introDontShow"> Don’t show this again</label>
-      <button id="introStartBtn">Got it — let’s play</button>
+  <!-- Welcome Screen -->
+  <div id="welcomeOverlay">
+    <div id="welcomeContent">
+      <h1>🎯 Welcome to the TPS Game 🎯</h1>
+      <p>This is a fun way to learn which vendors TPS provides <strong>demos</strong> and <strong>onboardings</strong> for.</p>
+      <button id="welcomeStartBtn">Click here to start</button>
     </div>
   </div>
-</div>
 
-<!-- Player form -->
-<div id="playerForm">
-  <label>Your Name:</label>
-  <input type="text" id="playerName" placeholder="Type your name" />
-  <button id="saveNameBtn">OK</button>
-</div>
-
-<!-- HUD -->
-<div id="hud">
-  <div class="group"><strong>Points:</strong> <span id="score">0</span></div>
-  <div class="group"><strong>Time:</strong> <span id="time">45</span>s</div>
-  <div class="timebar-wrap"><div id="timeBar"></div></div>
-  <div class="group">
-    <label for="difficulty"><strong>Difficulty:</strong></label>
-    <select id="difficulty">
-      <option value="easy">Easy</option>
-      <option value="normal" selected>Normal</option>
-      <option value="hard">Hard</option>
-    </select>
-  </div>
-  <div class="group"><span id="comboBadge">Streak: 0 | Combo: x1.00</span></div>
-  <div class="group"><strong>Target:</strong> <span id="targetReq">0</span>&nbsp;|&nbsp;<strong>This level:</strong> <span id="levelScore">0</span></div>
-  <div class="group"><button id="startGameBtn" style="display:none;">Start Game</button></div>
-</div>
-
-<!-- Game area -->
-<div id="gameArea"></div>
-
-<!-- Modal (Leaderboard) -->
-<div id="modalOverlay">
-  <div id="modalContent">
-    <h3>🏆 Leaderboard 🏆</h3>
-    <ol id="rankingList"></ol>
-    <div class="modal-actions">
-      <button id="playAgainBtn" class="btn primary">Play again</button>
-      <button id="closeModal" class="btn">Close</button>
+  <!-- Intro / Instructions -->
+  <div id="introOverlay">
+    <div id="introContent">
+      <h2>How to Play</h2>
+      <p>
+        The goal is to learn, in a playful way, which vendors the TPS team
+        <strong>supports with demos and onboarding</strong> (vendor supported) and which ones are not covered.
+      </p>
+      <h3>Objective</h3>
+      <ul>
+        <li>Click the product tiles that are <strong>demo/onboarding supported</strong>.</li>
+        <li>Avoid clicking products that are <strong>not</strong> supported.</li>
+      </ul>
+      <h3>Scoring</h3>
+      <ul>
+        <li><strong>+10 pts</strong> for a supported vendor (correct click).</li>
+        <li><strong>-5 pts</strong> for a non-supported vendor (wrong click).</li>
+        <li><strong>-1 pt</strong> for clicking empty space (miss).</li>
+      </ul>
+      <h3>Combo / Streak</h3>
+      <ul>
+        <li>Every 5 consecutive correct hits increases a <strong>combo</strong> (+25% per step).</li>
+        <li>Missing or a wrong click resets the streak.</li>
+      </ul>
+      <h3>Difficulty</h3>
+      <ul>
+        <li><strong>Easy</strong>: more time, slower spawn, targets stay longer.</li>
+        <li><strong>Normal</strong>: default settings.</li>
+        <li><strong>Hard</strong>: less time, faster spawn, shorter target life, and a <strong>1.5× score multiplier</strong> on correct hits.</li>
+      </ul>
+      <h3>Timer</h3>
+      <ul><li>The green bar shows the time remaining for the level.</li></ul>
+      <h3>Leaderboard</h3>
+      <ul>
+        <li>Scores are saved globally (Supabase) and shown after each round.</li>
+        <li>The last score you submitted aparece destacado com “(you)”.</li>
+      </ul>
+      <div id="introActions">
+        <label><input type="checkbox" id="introDontShow"> Don’t show this again</label>
+        <button id="introStartBtn">Got it — let’s play</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Persistent Leaderboard -->
-<div id="ranking">
-  <h3>🏆 Hall of Fame 🏆</h3>
-  <ol id="rankingListPersist"></ol>
-</div>
+  <!-- Player form -->
+  <div id="playerForm">
+    <label>Your Name:</label>
+    <input type="text" id="playerName" placeholder="Type your name" />
+    <button id="saveNameBtn">OK</button>
+  </div>
 
-<!-- Supabase (ESM) + Jogo -->
-<script type="module">
-  import { createClient } from "https://esm.sh/@supabase/supabase-js";
+  <!-- HUD -->
+  <div id="hud">
+    <div class="group"><strong>Points:</strong> <span id="score">0</span></div>
+    <div class="group"><strong>Time:</strong> <span id="time">45</span>s</div>
+    <div class="timebar-wrap"><div id="timeBar"></div></div>
+    <div class="group">
+      <label for="difficulty"><strong>Difficulty:</strong></label>
+      <select id="difficulty">
+        <option value="easy">Easy</option>
+        <option value="normal" selected>Normal</option>
+        <option value="hard">Hard</option>
+      </select>
+    </div>
+    <div class="group"><span id="comboBadge">Streak: 0 | Combo: x1.00</span></div>
+    <div class="group">
+      <strong>Target:</strong> <span id="targetReq">0</span>
+      &nbsp;|&nbsp;
+      <strong>This level:</strong> <span id="levelScore">0</span>
+    </div>
+    <div class="group"><button id="startGameBtn" style="display:none;">Start Game</button></div>
+  </div>
 
-  // === CONFIG SUPABASE ===
-  const SUPABASE_URL = "https://jzvombwgckgjmizzhinc.supabase.co";
-  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6dm9tYndnY2tnam1penpoaW5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NzQ2MjcsImV4cCI6MjA3MzM1MDYyN30.u57i3_aNLgBsx2ZmKQE2l4GvbBBviei4EF9UpXa86ds";
-  const TABLE = "Raking"; // <- nome exato da sua tabela
-  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+  <!-- Game area -->
+  <div id="gameArea"></div>
 
-  // ======= JOGO (o restante do seu JS) =======
-  // Som desativado – função vazia para não dar erro
-  function play() {}
+  <!-- Modal (Leaderboard) -->
+  <div id="modalOverlay">
+    <div id="modalContent">
+      <h3>🏆 Leaderboard 🏆</h3>
+      <ol id="rankingList"></ol>
+      <div class="modal-actions">
+        <button id="playAgainBtn" class="btn primary">Play again</button>
+        <button id="closeModal" class="btn">Close</button>
+      </div>
+    </div>
+  </div>
 
-  // === Products (full list) ===
-  const rawProducts = [ /* (lista exatamente como você já tinha) */ 
-  { name: "Zero Networks", demo: false, logo: "images/zero.jpg" },
-  { name: "Webroot", demo: false, logo: "images/webroot.jpg" },
-  { name: "VirtlX", demo: false, logo: "images/virtlx.jpg" },
-  { name: "Vicarius", demo: false, logo: "images/vicarius.jpg" },
-  { name: "Usecure", demo: false, logo: "images/usecure.jpg" },
-  { name: "TrueGrid", demo: false, logo: "images/truegrid.jpg" },
-  { name: "TrendMicro", demo: false, logo: "images/trendmicro.jpg" },
-  { name: "Sectigo", demo: false, logo: "images/sectigo.jpg" },
-  { name: "Rewst", demo: false, logo: "images/rewst.jpg" },
-  { name: "Revscale", demo: false, logo: "images/revscale_ai.jpg" },
-  { name: "Red Sift", demo: false, logo: "images/redsift.jpg" },
-  { name: "Probax", demo: false, logo: "images/probax.jpg" },
-  { name: "Pillr", demo: false, logo: "images/pillr.jpg" },
-  { name: "Perception Point", demo: false, logo: "images/perceptionpoint.jpg" },
-  { name: "Netwrix", demo: false, logo: "images/netwrix.jpg" },
-  { name: "Nerdio", demo: false, logo: "images/nerdio.jpg" },
-  { name: "N-Able", demo: false, logo: "images/nable.jpg" },
-  { name: "MSPFCO", demo: false, logo: "images/mspfco.jpg" },
-  { name: "MSPbots", demo: false, logo: "images/mspbots.jpg" },
-  { name: "Mailguard365", demo: false, logo: "images/mailguard.jpg" },
-  { name: "Liongard", demo: false, logo: "images/liongard.jpg" },
-  { name: "Kalibr8", demo: false, logo: "images/kalibrate.jpg" },
-  { name: "ITagree", demo: false, logo: "images/itagree.jpg" },
-  { name: "Hacware", demo: false, logo: "images/hacware.jpg" },
-  { name: "Guardz", demo: false, logo: "images/guardz.jpg" },
-  { name: "GoTo", demo: false, logo: "images/goto.jpg" },
-  { name: "Foxit", demo: false, logo: "images/foxit.jpg" },
-  { name: "Exium", demo: false, logo: "images/exium.jpg" },
-  { name: "Egnyte", demo: false, logo: "images/egnyte.jpg" },
-  { name: "EasyDMARC", demo: false, logo: "images/easydmarc.jpg" },
-  { name: "Devicie", demo: false, logo: "images/devicie.jpg" },
-  { name: "DefenseX", demo: false, logo: "images/defensex.jpg" },
-  { name: "Cyrisma", demo: false, logo: "images/cyrisma.jpg" },
-  { name: "CyberQP", demo: false, logo: "images/cyberqp.jpg" },
-  { name: "Cyber Fox", demo: false, logo: "images/cyberfox.jpg" },
-  { name: "Connectwise", demo: false, logo: "images/connectwise.jpg" },
-  { name: "Commvault", demo: false, logo: "images/commvault.jpg" },
-  { name: "CloudRadial", demo: false, logo: "images/cloudradial.jpg" },
-  { name: "Call2Teams", demo: false, logo: "images/call2teams.jpg" },
-  { name: "Bvoip", demo: false, logo: "images/bvoip.jpg" },
-  { name: "BreachSecureNow", demo: false, logo: "images/breachsecurenow.jpg" },
-  { name: "BitTitan", demo: false, logo: "images/bittitan.jpg" },
-  { name: "Airslate", demo: false, logo: "images/airslate.jpg" },
-  { name: "Actifile", demo: false, logo: "images/actifile.jpg" },
-  { name: "1Password", demo: false, logo: "images/1pasword.jpg" },
-  { name: "Solgari", demo: false, logo: "images/solgari.jpg" },
-  { name: "Salesbuildr", demo: false, logo: "images/salesbuildr.jpg" },
-  { name: "Officeatwork", demo: false, logo: "images/officeatwork.jpg" },
-  { name: "MontyCloud", demo: false, logo: "images/montycloud.jpg" },
-  { name: "CyberCert", demo: false, logo: "images/cybercert.jpg" },
-  { name: "Cloud Contracts 365", demo: false, logo: "images/cloudcontract365.jpg" },
-  { name: "Watchguard", demo: true, logo: "images/watchguard.jpg" },
-  { name: "Wasabi", demo: true, logo: "images/wasabi.jpg" },
-  { name: "Valimail", demo: true, logo: "images/valimail.jpg" },
-  { name: "Vade", demo: true, logo: "images/vade.jpg" },
-  { name: "Todyl", demo: true, logo: "images/todyl.jpg" },
-  { name: "ThreatDown", demo: true, logo: "images/threatdown.jpg" },
-  { name: "Superops", demo: true, logo: "images/superops.jpg" },
-  { name: "Sophos", demo: true, logo: "images/sophos.jpg" },
-  { name: "SentinelOne", demo: true, logo: "images/sentinelone.jpg" },
-  { name: "Redstor", demo: true, logo: "images/redstor.jpg" },
-  { name: "Proofpoint", demo: true, logo: "images/proofpoint.jpg" },
-  { name: "Printix", demo: true, logo: "images/printix.jpg" },
-  { name: "NordPass", demo: true, logo: "images/nordpass.jpg" },
-  { name: "NordLayer", demo: true, logo: "images/nordlayer.jpg" },
-  { name: "LastPass", demo: true, logo: "images/lastpass.jpg" },
-  { name: "Keeper", demo: true, logo: "images/keeper.jpg" },
-  { name: "Ironscales", demo: true, logo: "images/ironscales.jpg" },
-  { name: "Exclaimer", demo: true, logo: "images/exclaimer.jpg" },
-  { name: "Dropsuite", demo: true, logo: "images/dropsuite.jpg" },
-  { name: "Domotz", demo: true, logo: "images/domotz.jpg" },
-  { name: "DNSFilter", demo: true, logo: "images/dns_filter.jpg" },
-  { name: "Cynomi", demo: true, logo: "images/cynomi.jpg" },
-  { name: "Crowdstrike", demo: true, logo: "images/crowdstrike.jpg" },
-  { name: "Crewhu", demo: true, logo: "images/crewhu.jpg" },
-  { name: "BlackPoint Cyber", demo: true, logo: "images/blackpoint.jpg" },
-  { name: "Bitdefender", demo: true, logo: "images/bitdefender.jpg" },
-  { name: "Axcient", demo: true, logo: "images/axcient.jpg" },
-  { name: "CheckPoint", demo: true, logo: "images/checkpoint.jpg" },
-  { name: "Auvik", demo: true, logo: "images/auvik.jpg" },
-  { name: "Adobe", demo: true, logo: "images/adobe.jpg" },
-  { name: "Addigy", demo: true, logo: "images/addigy.jpg" },
-  { name: "Acronis", demo: true, logo: "images/acronis.jpg" }
-  ];
+  <!-- Persistent Leaderboard -->
+  <div id="ranking">
+    <h3>🏆 Hall of Fame 🏆</h3>
+    <ol id="rankingListPersist"><li style="list-style:none;opacity:.7">Loading...</li></ol>
+  </div>
 
-  const colors = ["#FF6B6B","#FFD93D","#6BCB77","#4D96FF","#FF8C42","#9B5DE5","#00BBF9","#F15BB5","#FFADAD","#FEE440","#8AC926","#1982C4","#80ED99","#B8B8FF","#FFC6FF","#A0C4FF"];
-  const products = rawProducts.map((p, i) => ({ ...p, color: colors[i % colors.length] }));
+  <script>
+    // === Supabase config (seu projeto) ===
+    const SUPABASE_URL = "https://jzvombwgckgjmizzhinc.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6dm9tYndnY2tnam1penpoaW5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NzQ2MjcsImV4cCI6MjA3MzM1MDYyN30.u57i3_aNLgBsx2ZmKQE2l4GvbBBviei4EF9UpXa86ds";
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  function preloadLogos(list){ list.forEach(p=>{ if(p.logo){ const img=new Image(); img.src=p.logo; } }); }
-  preloadLogos(products);
+    // === Helper para escapar HTML em nomes ===
+    const escapeHtml = (s) => (s ?? "").replace(/[&<>"']/g, m => (
+      { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[m]
+    ));
 
-  function getDifficultyParams() {
-    const d = document.getElementById("difficulty").value;
-    if (d === "easy") return { duration: 5000, spawn: 1100, time: 60, scoreMult: 1.00 };
-    if (d === "hard") return { duration: 2600, spawn: 700,  time: 35, scoreMult: 1.50 };
-    return { duration: 3500, spawn: 900, time: 45, scoreMult: 1.00 };
-  }
-
-  // Estado do jogo
-  let DIFF = getDifficultyParams();
-  let playerName = "";
-  let score = 0;
-  let timeLeft = DIFF.time;
-  let gameInterval, timerInterval;
-  let streak = 0;
-  let levelStartScore = 0, requiredToPass = 0;
-  let isPlaying = false, remainingPool = [];
-  let perLevelScores = [];
-  let currentLevel = 1;
-  const maxLevels = 10;
-
-  const vendorsDemo   = products.filter(p => p.demo);
-  const vendorsNoDemo = products.filter(p => !p.demo);
-
-  const scoreDisplay = document.getElementById("score");
-  const timeDisplay  = document.getElementById("time");
-  const timeBar      = document.getElementById("timeBar");
-  const gameArea     = document.getElementById("gameArea");
-  const modalOverlay = document.getElementById("modalOverlay");
-  const rankingList  = document.getElementById("rankingList");
-  const rankingListPersist = document.getElementById("rankingListPersist");
-  const closeModal   = document.getElementById("closeModal");
-  const playAgainBtn = document.getElementById("playAgainBtn");
-  const comboBadge   = document.getElementById("comboBadge");
-  const targetReqEl  = document.getElementById("targetReq");
-  const levelScoreEl = document.getElementById("levelScore");
-  const introOverlay = document.getElementById("introOverlay");
-  const introStartBtn = document.getElementById("introStartBtn");
-  const introDontShow = document.getElementById("introDontShow");
-  const welcomeOverlay = document.getElementById("welcomeOverlay");
-  const welcomeStartBtn = document.getElementById("welcomeStartBtn");
-  const startGameBtn = document.getElementById("startGameBtn");
-
-  // Supabase helpers
-  async function saveRankingEntry(name, points){
-    try {
-      const { error } = await supabase.from(TABLE).insert([{ name, points }]);
-      if (error) throw error;
-    } catch (err) {
-      console.error("Insert failed:", err);
+    // === Salvar score no Supabase e retornar linha inserida ===
+    async function saveRankingEntry(name, points) {
+      try {
+        const { data, error } = await sb
+          .from("Raking")
+          .insert({ name, points })
+          .select()
+          .single();
+        if (error) throw error;
+        return data; // { id, name, points, created_at }
+      } catch (e) {
+        console.error("saveRankingEntry error:", e);
+        return null;
+      }
     }
-  }
-  async function loadRankingEntries(limit=10){
-    try {
-      const { data, error } = await supabase
-        .from(TABLE)
+
+    // === Carregar top N do Supabase (ordenado por points desc) ===
+    async function loadRankingEntries(limit = 10) {
+      const { data, error } = await sb
+        .from("Raking")
         .select("*")
         .order("points", { ascending: false })
         .limit(limit);
       if (error) throw error;
       return data || [];
-    } catch (err) {
-      console.error("Select failed:", err);
-      return null; // sinaliza erro
-    }
-  }
-
-  // Welcome/Intro
-  document.addEventListener("DOMContentLoaded", async () => {
-    if (welcomeOverlay) welcomeOverlay.style.display = "flex";
-    if (introOverlay) introOverlay.style.display = "none";
-
-    // Carregar Hall of Fame
-    const top = await loadRankingEntries(10);
-    rankingListPersist.innerHTML = top && top.length
-      ? top.map((r,i)=>`<li>${i+1}. ${r.name} — ${r.points} pts</li>`).join("")
-      : `<li style="list-style:none;opacity:.8">${top===null ? "Could not load scores" : "No scores yet"}</li>`;
-  });
-
-  welcomeStartBtn.addEventListener("click", () => {
-    welcomeOverlay.style.display = "none";
-    introOverlay.style.display   = "flex";
-  });
-
-  (function showIntroOnLoad() {
-    try {
-      const hide = localStorage.getItem("se_pax8_game_hideIntro") === "1";
-      const welcomeVisible = document.getElementById("welcomeOverlay")?.style.display !== "none";
-      if (!hide && !welcomeVisible) introOverlay.style.display = "flex";
-    } catch {}
-  })();
-
-  introStartBtn.addEventListener("click", () => {
-    if (introDontShow.checked) { try { localStorage.setItem("se_pax8_game_hideIntro", "1"); } catch {} }
-    introOverlay.style.display = "none";
-  });
-
-  document.addEventListener("keydown", (e) => {
-    if (introOverlay.style.display === "flex" && e.key === "Escape") introOverlay.style.display = "none";
-  });
-
-  document.getElementById("saveNameBtn").addEventListener("click", () => {
-    playerName = document.getElementById("playerName").value.trim();
-    if (playerName) {
-      document.getElementById("playerForm").style.display = "none";
-      document.getElementById("hud").style.display = "flex";
-      startGameBtn.style.display = "inline-block";
-    } else {
-      alert("Please type your name to play!");
-    }
-  });
-
-  startGameBtn.addEventListener("click", startGame);
-
-  // Utilidades
-  closeModal.addEventListener("click", () => (modalOverlay.style.display = "none"));
-  function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
-  function getDemoRatio(level){ const start=0.8, end=0.2; const t=Math.min(Math.max((level-1)/(maxLevels-1),0),1); return start+(end-start)*t; }
-  function buildLevelPool(level){
-    const ratio = getDemoRatio(level);
-    const totalTargets = Math.min(products.length, 40);
-    const demoCount   = Math.max(1, Math.round(totalTargets * ratio));
-    const noDemoCount = Math.max(1, totalTargets - demoCount);
-    const pickDemo   = shuffle([...vendorsDemo]).slice(0, Math.min(demoCount, vendorsDemo.length));
-    const pickNoDemo = shuffle([...vendorsNoDemo]).slice(0, Math.min(noDemoCount, vendorsNoDemo.length));
-    return shuffle([...pickDemo, ...pickNoDemo]);
-  }
-  function updateLevelScoreHUD(){ const earnedThisLevel = score - levelStartScore; levelScoreEl.textContent = earnedThisLevel; targetReqEl.textContent = requiredToPass; }
-
-  function startGame(){
-    document.body.classList.remove("easy","normal","hard");
-    document.body.classList.add(document.getElementById("difficulty").value);
-    DIFF = getDifficultyParams();
-
-    score = 0; streak = 0; perLevelScores = []; currentLevel = 1;
-    updateComboBadge();
-
-    timeLeft = DIFF.time; timeDisplay.textContent = timeLeft; timeBar.style.width = "100%";
-    scoreDisplay.textContent = score; gameArea.innerHTML = "";
-
-    remainingPool = buildLevelPool(currentLevel); isPlaying = true;
-
-    levelStartScore = score;
-    const demoInPool = remainingPool.filter(p => p.demo).length;
-    const levelMult  = 1 + (currentLevel - 1) * 0.10;
-    requiredToPass   = Math.ceil(0.9 * demoInPool * 10 * DIFF.scoreMult * levelMult);
-    updateLevelScoreHUD();
-
-    clearInterval(gameInterval); clearInterval(timerInterval);
-    gameInterval = setInterval(spawnTarget, DIFF.spawn);
-    timerInterval = setInterval(updateTimer, 1000);
-  }
-
-  function updateTimer(){
-    timeLeft--; timeDisplay.textContent = timeLeft;
-    timeBar.style.width = Math.max(0, (timeLeft/DIFF.time)*100) + "%";
-    if (timeLeft <= 0) endLevel();
-  }
-
-  gameArea.addEventListener("click", (e) => {
-    if (!isPlaying) return;
-    if (e.target !== gameArea) return;
-    score -= 1; updateLevelScoreHUD(); scoreDisplay.textContent = score; play("sndMiss"); showClickFx(e);
-  });
-
-  function showClickFx(e){
-    const rect = gameArea.getBoundingClientRect();
-    const fx = document.createElement("div");
-    fx.style.position="absolute";
-    fx.style.left=(e.clientX-rect.left)+"px";
-    fx.style.top =(e.clientY-rect.top )+"px";
-    fx.style.transform="translate(-10px,-20px)";
-    fx.style.pointerEvents="none";
-    fx.style.color="#ff5252";
-    fx.style.fontWeight="bold";
-    fx.style.textShadow="0 1px 2px rgba(0,0,0,0.4)";
-    fx.textContent="-1";
-    gameArea.appendChild(fx);
-    setTimeout(()=>fx.remove(),600);
-  }
-
-  function spawnTarget(){
-    if (!isPlaying) return;
-    if (remainingPool.length === 0){ endLevel(); return; }
-
-    const product = remainingPool.pop();
-    const target = document.createElement("div");
-    target.className = "target";
-
-    if (product.logo){
-      target.innerHTML = `<img src="${product.logo}" alt="${product.name}" title="${product.name}">`;
-      const imgEl = target.querySelector("img");
-      imgEl.addEventListener("error", () => { target.innerHTML = `<div class="logo-fallback" title="${product.name}">${product.name}</div>`; }, { once: true });
-    } else {
-      target.innerHTML = `<div class="logo-fallback" title="${product.name}">${product.name}</div>`;
     }
 
-    const TARGET_SIZE = 110;
-    target.style.left = Math.random() * (gameArea.clientWidth  - TARGET_SIZE) + "px";
-    target.style.top  = Math.random() * (gameArea.clientHeight - TARGET_SIZE) + "px";
-
-    target.addEventListener("click", (ev) => {
-      const base = product.demo ? 10 : -5;
-      if (product.demo) { streak++; play("sndHit"); } else { streak = 0; play("sndMiss"); }
-      const combo = 1 + Math.floor(streak / 5) * 0.25;
-      const mult  = product.demo ? (combo * DIFF.scoreMult) : 1;
-      const levelMult = 1 + (currentLevel - 1) * 0.10;
-      const points = Math.round(base * mult * levelMult);
-
-      score += points;
-      updateLevelScoreHUD();
-      scoreDisplay.textContent = score;
-      flashPoints(target, points, product.demo, combo, DIFF.scoreMult);
-      updateComboBadge(product.demo ? combo * DIFF.scoreMult : 1);
-
-      target.remove();
-      ev.stopPropagation();
-    });
-
-    gameArea.appendChild(target);
-    setTimeout(() => target.remove(), DIFF.duration);
-  }
-
-  function updateComboBadge(effCombo=1){
-    const shown = Math.max(1, effCombo);
-    comboBadge.textContent = `Streak: ${streak} | Combo: x${shown.toFixed(2)}`;
-  }
-
-  function flashPoints(target, points, isHit, combo, diffMult){
-    const fx = document.createElement("div");
-    fx.style.position="absolute";
-    fx.style.left=target.style.left;
-    fx.style.top =target.style.top;
-    fx.style.transform="translate(12px,-12px)";
-    fx.style.pointerEvents="none";
-    fx.style.color = isHit ? "#00e676" : "#ff5252";
-    fx.style.fontWeight="bold";
-    fx.style.textShadow="0 1px 2px rgba(0,0,0,0.4)";
-    const extra = (isHit && (combo>1 || diffMult>1)) ? ` x${(combo*diffMult).toFixed(2)}` : "";
-    fx.textContent = `${points>0?"+":""}${points}${extra}`;
-    gameArea.appendChild(fx);
-    setTimeout(()=>fx.remove(),800);
-  }
-
-  function showPauseModal({ title, message, actionText, onAction }){
-    const titleEl = modalOverlay.querySelector("h3");
-    const listEl  = rankingList;
-    const closeBtn = document.getElementById("closeModal");
-    const playAgain = document.getElementById("playAgainBtn");
-
-    isPlaying = false; clearInterval(gameInterval); clearInterval(timerInterval);
-
-    titleEl.textContent = title || "Paused";
-    listEl.innerHTML = `<li style="list-style:none; margin:0 0 8px 0;">${message || ""}</li>`;
-
-    playAgain.textContent = actionText || "Continue";
-    playAgain.onclick = () => { modalOverlay.style.display = "none"; if (typeof onAction === "function") onAction(); };
-    closeBtn.onclick = () => { modalOverlay.style.display = "none"; };
-
-    modalOverlay.style.display = "flex";
-  }
-
-  function endLevel(){
-    isPlaying = false; clearInterval(gameInterval); clearInterval(timerInterval);
-
-    const earnedThisLevel = score - levelStartScore;
-    perLevelScores.push(earnedThisLevel);
-
-    if (earnedThisLevel < requiredToPass) {
-      showPauseModal({
-        title: `Level ${currentLevel} failed`,
-        message: `You scored ${earnedThisLevel} pts but need ${requiredToPass} pts. Try again!`,
-        actionText: "Retry level",
-        onAction: () => {
-          gameArea.innerHTML = "";
-          timeLeft = DIFF.time; timeDisplay.textContent = timeLeft; timeBar.style.width = "100%";
-          remainingPool = buildLevelPool(currentLevel);
-
-          levelStartScore = score;
-          const demoInPool = remainingPool.filter(p => p.demo).length;
-          const levelMult  = 1 + (currentLevel - 1) * 0.10;
-          requiredToPass   = Math.ceil(0.9 * demoInPool * 10 * DIFF.scoreMult * levelMult);
-          updateLevelScoreHUD();
-
-          streak = 0; updateComboBadge();
-
-          isPlaying = true;
-          clearInterval(gameInterval); clearInterval(timerInterval);
-          gameInterval = setInterval(spawnTarget, DIFF.spawn);
-          timerInterval = setInterval(updateTimer, 1000);
-        }
-      });
-
-      document.getElementById("closeModal").onclick = () => { modalOverlay.style.display = "none"; endGame(); };
-      return;
+    // === Renderizar uma <ol> de resultados ===
+    function renderList(olEl, items, highlightId = null) {
+      if (!olEl) return;
+      if (!items.length) {
+        olEl.innerHTML = '<li style="list-style:none;opacity:.7">No scores yet</li>';
+        return;
+      }
+      olEl.innerHTML = items
+        .map((r, i) => {
+          const you = highlightId && r.id === highlightId ? ' class="highlight"' : "";
+          return `<li${you}>${i + 1}. ${escapeHtml(r.name)} — ${r.points} pts</li>`;
+        })
+        .join("");
     }
 
-    currentLevel++;
-    if (currentLevel > maxLevels) { showWinner(); return; }
-
-    const nextSetup = () => {
-      gameArea.innerHTML = "";
-      timeLeft = DIFF.time; timeDisplay.textContent = timeLeft; timeBar.style.width = "100%";
-      remainingPool = buildLevelPool(currentLevel);
-
-      levelStartScore = score;
-      const demoInNext = remainingPool.filter(p => p.demo).length;
-      const levelMultNext = 1 + (currentLevel - 1) * 0.10;
-      requiredToPass = Math.ceil(0.9 * demoInNext * 10 * DIFF.scoreMult * levelMultNext);
-      updateLevelScoreHUD();
-
-      isPlaying = true;
-      gameInterval = setInterval(spawnTarget, DIFF.spawn);
-      timerInterval = setInterval(updateTimer, 1000);
-    };
-
-    showPauseModal({
-      title: `Level ${currentLevel}`,
-      message: `Difficulty scaling applied. Good luck!`,
-      actionText: "Start level",
-      onAction: nextSetup
-    });
-  }
-
-  function showWinner(){
-    isPlaying = false; clearInterval(gameInterval); clearInterval(timerInterval);
-    const titleEl = modalOverlay.querySelector("h3");
-    titleEl.textContent = "🎉 You beat all levels! 🎉";
-
-    rankingList.innerHTML = `
-      <li style="list-style:none; margin:0 0 8px 0; font-weight:bold; color:#4CAF50;">
-        Congratulations, ${playerName}! You completed all ${maxLevels} levels.
-      </li>`;
-    playAgainBtn.textContent = "See leaderboard";
-    playAgainBtn.onclick = () => { modalOverlay.style.display = "none"; endGame(); };
-    closeModal.onclick = () => modalOverlay.style.display = "none";
-    modalOverlay.style.display = "flex";
-  }
-
-  async function endGame(){
-    isPlaying = false; clearInterval(gameInterval); clearInterval(timerInterval);
-
-    const earnedThisLevel = score - levelStartScore;
-    if (perLevelScores.length === 0 || perLevelScores.reduce((a,b)=>a+b,0) + earnedThisLevel === score) {
-      if (earnedThisLevel !== 0 && perLevelScores[perLevelScores.length - 1] !== earnedThisLevel) {
-        perLevelScores.push(earnedThisLevel);
+    // === Recarregar o Hall of Fame persistente ===
+    async function refreshHallOfFame() {
+      const list = document.getElementById("rankingListPersist");
+      try {
+        const top = await loadRankingEntries(10);
+        renderList(list, top);
+      } catch (e) {
+        console.error(e);
+        if (list) list.innerHTML = '<li style="list-style:none;color:#b00">Could not load scores</li>';
       }
     }
-    const total = perLevelScores.reduce((a,b)=>a+b,0);
 
-    // Tenta gravar e depois ler o top 10; se falhar, mostra fallback
-    let top = null;
-    try {
-      await saveRankingEntry(playerName || "Player", total);
-      top = await loadRankingEntries(10);
-    } catch (e) {
-      console.error(e);
+    // === SEU JOGO (código original, com pequenas mudanças onde indicado) ===
+
+    const rawProducts = [
+      { name: "Zero Networks", demo: false, logo: "images/zero.jpg" },
+      { name: "Webroot", demo: false, logo: "images/webroot.jpg" },
+      { name: "VirtlX", demo: false, logo: "images/virtlx.jpg" },
+      { name: "Vicarius", demo: false, logo: "images/vicarius.jpg" },
+      { name: "Usecure", demo: false, logo: "images/usecure.jpg" },
+      { name: "TrueGrid", demo: false, logo: "images/truegrid.jpg" },
+      { name: "TrendMicro", demo: false, logo: "images/trendmicro.jpg" },
+      { name: "Sectigo", demo: false, logo: "images/sectigo.jpg" },
+      { name: "Rewst", demo: false, logo: "images/rewst.jpg" },
+      { name: "Revscale", demo: false, logo: "images/revscale_ai.jpg" },
+      { name: "Red Sift", demo: false, logo: "images/redsift.jpg" },
+      { name: "Probax", demo: false, logo: "images/probax.jpg" },
+      { name: "Pillr", demo: false, logo: "images/pillr.jpg" },
+      { name: "Perception Point", demo: false, logo: "images/perceptionpoint.jpg" },
+      { name: "Netwrix", demo: false, logo: "images/netwrix.jpg" },
+      { name: "Nerdio", demo: false, logo: "images/nerdio.jpg" },
+      { name: "N-Able", demo: false, logo: "images/nable.jpg" },
+      { name: "MSPFCO", demo: false, logo: "images/mspfco.jpg" },
+      { name: "MSPbots", demo: false, logo: "images/mspbots.jpg" },
+      { name: "Mailguard365", demo: false, logo: "images/mailguard.jpg" },
+      { name: "Liongard", demo: false, logo: "images/liongard.jpg" },
+      { name: "Kalibr8", demo: false, logo: "images/kalibrate.jpg" },
+      { name: "ITagree", demo: false, logo: "images/itagree.jpg" },
+      { name: "Hacware", demo: false, logo: "images/hacware.jpg" },
+      { name: "Guardz", demo: false, logo: "images/guardz.jpg" },
+      { name: "GoTo", demo: false, logo: "images/goto.jpg" },
+      { name: "Foxit", demo: false, logo: "images/foxit.jpg" },
+      { name: "Exium", demo: false, logo: "images/exium.jpg" },
+      { name: "Egnyte", demo: false, logo: "images/egnyte.jpg" },
+      { name: "EasyDMARC", demo: false, logo: "images/easydmarc.jpg" },
+      { name: "Devicie", demo: false, logo: "images/devicie.jpg" },
+      { name: "DefenseX", demo: false, logo: "images/defensex.jpg" },
+      { name: "Cyrisma", demo: false, logo: "images/cyrisma.jpg" },
+      { name: "CyberQP", demo: false, logo: "images/cyberqp.jpg" },
+      { name: "Cyber Fox", demo: false, logo: "images/cyberfox.jpg" },
+      { name: "Connectwise", demo: false, logo: "images/connectwise.jpg" },
+      { name: "Commvault", demo: false, logo: "images/commvault.jpg" },
+      { name: "CloudRadial", demo: false, logo: "images/cloudradial.jpg" },
+      { name: "Call2Teams", demo: false, logo: "images/call2teams.jpg" },
+      { name: "Bvoip", demo: false, logo: "images/bvoip.jpg" },
+      { name: "BreachSecureNow", demo: false, logo: "images/breachsecurenow.jpg" },
+      { name: "BitTitan", demo: false, logo: "images/bittitan.jpg" },
+      { name: "Airslate", demo: false, logo: "images/airslate.jpg" },
+      { name: "Actifile", demo: false, logo: "images/actifile.jpg" },
+      { name: "1Password", demo: false, logo: "images/1pasword.jpg" },
+      { name: "Solgari", demo: false, logo: "images/solgari.jpg" },
+      { name: "Salesbuildr", demo: false, logo: "images/salesbuildr.jpg" },
+      { name: "Officeatwork", demo: false, logo: "images/officeatwork.jpg" },
+      { name: "MontyCloud", demo: false, logo: "images/montycloud.jpg" },
+      { name: "CyberCert", demo: false, logo: "images/cybercert.jpg" },
+      { name: "Cloud Contracts 365", demo: false, logo: "images/cloudcontract365.jpg" },
+
+      // YES
+      { name: "Watchguard", demo: true, logo: "images/watchguard.jpg" },
+      { name: "Wasabi", demo: true, logo: "images/wasabi.jpg" },
+      { name: "Valimail", demo: true, logo: "images/valimail.jpg" },
+      { name: "Vade", demo: true, logo: "images/vade.jpg" },
+      { name: "Todyl", demo: true, logo: "images/todyl.jpg" },
+      { name: "ThreatDown", demo: true, logo: "images/threatdown.jpg" },
+      { name: "Superops", demo: true, logo: "images/superops.jpg" },
+      { name: "Sophos", demo: true, logo: "images/sophos.jpg" },
+      { name: "SentinelOne", demo: true, logo: "images/sentinelone.jpg" },
+      { name: "Redstor", demo: true, logo: "images/redstor.jpg" },
+      { name: "Proofpoint", demo: true, logo: "images/proofpoint.jpg" },
+      { name: "Printix", demo: true, logo: "images/printix.jpg" },
+      { name: "NordPass", demo: true, logo: "images/nordpass.jpg" },
+      { name: "NordLayer", demo: true, logo: "images/nordlayer.jpg" },
+      { name: "LastPass", demo: true, logo: "images/lastpass.jpg" },
+      { name: "Keeper", demo: true, logo: "images/keeper.jpg" },
+      { name: "Ironscales", demo: true, logo: "images/ironscales.jpg" },
+      { name: "Exclaimer", demo: true, logo: "images/exclaimer.jpg" },
+      { name: "Dropsuite", demo: true, logo: "images/dropsuite.jpg" },
+      { name: "Domotz", demo: true, logo: "images/domotz.jpg" },
+      { name: "DNSFilter", demo: true, logo: "images/dns_filter.jpg" },
+      { name: "Cynomi", demo: true, logo: "images/cynomi.jpg" },
+      { name: "Crowdstrike", demo: true, logo: "images/crowdstrike.jpg" },
+      { name: "Crewhu", demo: true, logo: "images/crewhu.jpg" },
+      { name: "BlackPoint Cyber", demo: true, logo: "images/blackpoint.jpg" },
+      { name: "Bitdefender", demo: true, logo: "images/bitdefender.jpg" },
+      { name: "Axcient", demo: true, logo: "images/axcient.jpg" },
+      { name: "CheckPoint", demo: true, logo: "images/checkpoint.jpg" },
+      { name: "Auvik", demo: true, logo: "images/auvik.jpg" },
+      { name: "Adobe", demo: true, logo: "images/adobe.jpg" },
+      { name: "Addigy", demo: true, logo: "images/addigy.jpg" },
+      { name: "Acronis", demo: true, logo: "images/acronis.jpg" }
+    ];
+
+    // Som desativado (placeholders)
+    function play() {}
+
+    const colors = ["#FF6B6B","#FFD93D","#6BCB77","#4D96FF","#FF8C42","#9B5DE5","#00BBF9","#F15BB5","#FFADAD","#FEE440","#8AC926","#1982C4","#80ED99","#B8B8FF","#FFC6FF","#A0C4FF"];
+    const products = rawProducts.map((p, i) => ({ ...p, color: colors[i % colors.length] }));
+
+    function preloadLogos(list){ list.forEach(p=>{ if(p.logo){ const img=new Image(); img.src=p.logo; } }); }
+    preloadLogos(products);
+
+    function getDifficultyParams() {
+      const d = document.getElementById("difficulty").value;
+      if (d === "easy") return { duration: 5000, spawn: 1100, time: 60, scoreMult: 1.00 };
+      if (d === "hard") return { duration: 2600, spawn: 700,  time: 35, scoreMult: 1.50 };
+      return { duration: 3500, spawn: 900, time: 45, scoreMult: 1.00 };
     }
-    rankingList.innerHTML = (top && top.length)
-      ? top.map((r,i)=>`<li${r.name===playerName?' class="highlight"':''}>${i+1}. ${r.name} — ${r.points} pts</li>`).join("")
-      : `<li style="list-style:none;opacity:.8">${top===null ? "Could not load scores" : "No scores yet"}</li>`;
+    let DIFF = getDifficultyParams();
 
-    const titleEl = modalOverlay.querySelector("h3");
-    titleEl.textContent = "🏆 Leaderboard 🏆";
-    playAgainBtn.textContent = "Play again";
-    playAgainBtn.onclick = () => { modalOverlay.style.display = "none"; startGame(); };
-    closeModal.onclick   = () => { modalOverlay.style.display = "none"; };
-    modalOverlay.style.display = "flex";
-  }
-</script>
+    // Estado do jogo
+    let playerName = "";
+    let score = 0;
+    let timeLeft = DIFF.time;
+    let gameInterval, timerInterval;
+    let streak = 0;
+    let levelStartScore = 0, requiredToPass = 0;
+    let isPlaying = false, remainingPool = [];
+    let perLevelScores = [];
+    let currentLevel = 1;
+    const maxLevels = 10;
+
+    const vendorsDemo = products.filter(p => p.demo);
+    const vendorsNoDemo = products.filter(p => !p.demo);
+
+    // Elements
+    const scoreDisplay = document.getElementById("score");
+    const timeDisplay = document.getElementById("time");
+    const timeBar = document.getElementById("timeBar");
+    const gameArea = document.getElementById("gameArea");
+    const modalOverlay = document.getElementById("modalOverlay");
+    const rankingList = document.getElementById("rankingList");
+    const rankingListPersist = document.getElementById("rankingListPersist");
+    const closeModal = document.getElementById("closeModal");
+    const playAgainBtn = document.getElementById("playAgainBtn");
+    const comboBadge = document.getElementById("comboBadge");
+    const targetReqEl = document.getElementById("targetReq");
+    const levelScoreEl = document.getElementById("levelScore");
+
+    const introOverlay = document.getElementById("introOverlay");
+    const introStartBtn = document.getElementById("introStartBtn");
+    const introDontShow = document.getElementById("introDontShow");
+    const welcomeOverlay = document.getElementById("welcomeOverlay");
+    const welcomeStartBtn = document.getElementById("welcomeStartBtn");
+
+    document.addEventListener("DOMContentLoaded", () => {
+      if (welcomeOverlay) welcomeOverlay.style.display = "flex";
+      if (introOverlay)   introOverlay.style.display   = "none";
+      refreshHallOfFame(); // ⬅️ carrega o Hall of Fame na página
+    });
+
+    welcomeStartBtn.addEventListener("click", () => {
+      welcomeOverlay.style.display = "none";
+      introOverlay.style.display   = "flex";
+    });
+
+    (function showIntroOnLoad(){
+      try {
+        const hide = localStorage.getItem("se_pax8_game_hideIntro") === "1";
+        const welcomeVisible = document.getElementById("welcomeOverlay")?.style.display !== "none";
+        if (!hide && !welcomeVisible) introOverlay.style.display = "flex";
+      } catch {}
+    })();
+
+    introStartBtn.addEventListener("click", () => {
+      if (introDontShow.checked) { try { localStorage.setItem("se_pax8_game_hideIntro","1"); } catch{} }
+      introOverlay.style.display = "none";
+    });
+
+    document.addEventListener("keydown",(e)=>{ if (introOverlay.style.display==="flex" && e.key==="Escape") introOverlay.style.display="none"; });
+
+    const startGameBtn = document.getElementById("startGameBtn");
+    document.getElementById("saveNameBtn").addEventListener("click", () => {
+      playerName = document.getElementById("playerName").value.trim();
+      if (playerName) {
+        document.getElementById("playerForm").style.display = "none";
+        document.getElementById("hud").style.display = "flex";
+        startGameBtn.style.display = "inline-block";
+      } else {
+        alert("Please type your name to play!");
+      }
+    });
+    startGameBtn.addEventListener("click", startGame);
+
+    closeModal.addEventListener("click", () => modalOverlay.style.display = "none");
+
+    function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]} return a; }
+    function getDemoRatio(level){ const start=.8,end=.2; const t=Math.min(Math.max((level-1)/(maxLevels-1),0),1); return start + (end-start)*t; }
+
+    function buildLevelPool(level) {
+      const ratio = getDemoRatio(level);
+      const totalTargets = Math.min(products.length, 40);
+      const demoCount = Math.max(1, Math.round(totalTargets * ratio));
+      const noDemoCount = Math.max(1, totalTargets - demoCount);
+      const pickDemo   = shuffle([...vendorsDemo]).slice(0, Math.min(demoCount, vendorsDemo.length));
+      const pickNoDemo = shuffle([...vendorsNoDemo]).slice(0, Math.min(noDemoCount, vendorsNoDemo.length));
+      return shuffle([...pickDemo, ...pickNoDemo]);
+    }
+
+    function updateLevelScoreHUD() {
+      const earnedThisLevel = score - levelStartScore;
+      levelScoreEl.textContent = earnedThisLevel;
+      targetReqEl.textContent  = requiredToPass;
+    }
+
+    function startGame() {
+      document.body.classList.remove("easy","normal","hard");
+      document.body.classList.add(document.getElementById("difficulty").value);
+
+      DIFF = getDifficultyParams();
+      score = 0; streak = 0; perLevelScores = []; currentLevel = 1;
+
+      updateComboBadge();
+      timeLeft = DIFF.time;
+      timeDisplay.textContent = timeLeft; timeBar.style.width = "100%";
+      scoreDisplay.textContent = score; gameArea.innerHTML = "";
+
+      remainingPool = buildLevelPool(currentLevel);
+      isPlaying = true;
+
+      levelStartScore = score;
+      const demoInPool = remainingPool.filter(p=>p.demo).length;
+      const levelMult = 1 + (currentLevel - 1) * .10;
+      requiredToPass = Math.ceil(.9 * demoInPool * 10 * DIFF.scoreMult * levelMult);
+      updateLevelScoreHUD();
+
+      clearInterval(gameInterval); clearInterval(timerInterval);
+      gameInterval = setInterval(spawnTarget, DIFF.spawn);
+      timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function updateTimer() {
+      timeLeft--; timeDisplay.textContent = timeLeft;
+      timeBar.style.width = Math.max(0,(timeLeft/DIFF.time)*100) + "%";
+      if (timeLeft <= 0) endLevel();
+    }
+
+    gameArea.addEventListener("click",(e)=>{
+      if (!isPlaying) return;
+      if (e.target !== gameArea) return;
+      score -= 1; updateLevelScoreHUD();
+      scoreDisplay.textContent = score; play("sndMiss"); showClickFx(e);
+    });
+
+    function showClickFx(e){
+      const rect = gameArea.getBoundingClientRect();
+      const fx = document.createElement("div");
+      fx.style.position="absolute";
+      fx.style.left=(e.clientX-rect.left)+"px";
+      fx.style.top=(e.clientY-rect.top)+"px";
+      fx.style.transform="translate(-10px,-20px)";
+      fx.style.pointerEvents="none"; fx.style.color="#ff5252"; fx.style.fontWeight="bold";
+      fx.style.textShadow="0 1px 2px rgba(0,0,0,.4)"; fx.textContent="-1";
+      gameArea.appendChild(fx); setTimeout(()=>fx.remove(),600);
+    }
+
+    function spawnTarget() {
+      if (!isPlaying) return;
+      if (remainingPool.length===0) { endLevel(); return; }
+
+      const product = remainingPool.pop();
+      const target = document.createElement("div");
+      target.className = "target";
+
+      if (product.logo) {
+        target.innerHTML = `<img src="${product.logo}" alt="${product.name}" title="${product.name}">`;
+        target.querySelector("img").addEventListener("error", () => {
+          target.innerHTML = `<div class="logo-fallback" title="${product.name}">${product.name}</div>`;
+        }, { once: true });
+      } else {
+        target.innerHTML = `<div class="logo-fallback" title="${product.name}">${product.name}</div>`;
+      }
+
+      const TARGET_SIZE = 110;
+      target.style.left = Math.random()*(gameArea.clientWidth - TARGET_SIZE) + "px";
+      target.style.top  = Math.random()*(gameArea.clientHeight- TARGET_SIZE) + "px";
+
+      target.addEventListener("click", (ev) => {
+        const base = product.demo ? 10 : -5;
+        if (product.demo) { streak++; play("sndHit"); } else { streak=0; play("sndMiss"); }
+        const combo = 1 + Math.floor(streak/5)*0.25;
+        const mult  = product.demo ? (combo * DIFF.scoreMult) : 1;
+        const levelMult = 1 + (currentLevel - 1) * .10;
+        const points = Math.round(base * mult * levelMult);
+
+        score += points; updateLevelScoreHUD();
+        scoreDisplay.textContent = score;
+        flashPoints(target, points, product.demo, combo, DIFF.scoreMult);
+        updateComboBadge(product.demo ? combo*DIFF.scoreMult : 1);
+
+        target.remove(); ev.stopPropagation();
+      });
+
+      gameArea.appendChild(target);
+      setTimeout(()=>target.remove(), DIFF.duration);
+    }
+
+    function updateComboBadge(effCombo=1){
+      const shown = Math.max(1, effCombo);
+      comboBadge.textContent = `Streak: ${streak} | Combo: x${shown.toFixed(2)}`;
+    }
+
+    function flashPoints(target, points, isHit, combo, diffMult){
+      const fx=document.createElement("div");
+      fx.style.position="absolute"; fx.style.left=target.style.left; fx.style.top=target.style.top;
+      fx.style.transform="translate(12px,-12px)"; fx.style.pointerEvents="none";
+      fx.style.color=isHit?"#00e676":"#ff5252"; fx.style.fontWeight="bold"; fx.style.textShadow="0 1px 2px rgba(0,0,0,.4)";
+      const extra = (isHit && (combo>1 || diffMult>1)) ? ` x${(combo*diffMult).toFixed(2)}` : "";
+      fx.textContent = `${points>0?"+":""}${points}${extra}`;
+      gameArea.appendChild(fx); setTimeout(()=>fx.remove(),800);
+    }
+
+    function showPauseModal({ title, message, actionText, onAction }) {
+      const titleEl = modalOverlay.querySelector("h3");
+      const listEl  = rankingList;
+      const closeBtn = document.getElementById("closeModal");
+      const playAgain = document.getElementById("playAgainBtn");
+
+      isPlaying=false; clearInterval(gameInterval); clearInterval(timerInterval);
+
+      titleEl.textContent = title || "Paused";
+      listEl.innerHTML = `<li style="list-style:none; margin:0 0 8px 0;">${message || ""}</li>`;
+
+      playAgain.textContent = actionText || "Continue";
+      playAgain.onclick = () => { modalOverlay.style.display = "none"; if (typeof onAction === "function") onAction(); };
+      closeBtn.onclick = () => { modalOverlay.style.display = "none"; };
+
+      modalOverlay.style.display = "flex";
+    }
+
+    function endLevel() {
+      isPlaying=false; clearInterval(gameInterval); clearInterval(timerInterval);
+      const earnedThisLevel = score - levelStartScore;
+      perLevelScores.push(earnedThisLevel);
+
+      if (earnedThisLevel < requiredToPass) {
+        showPauseModal({
+          title:`Level ${currentLevel} failed`,
+          message:`You scored ${earnedThisLevel} pts but need ${requiredToPass} pts. Try again!`,
+          actionText:"Retry level",
+          onAction:()=>{
+            gameArea.innerHTML=""; timeLeft=DIFF.time; timeDisplay.textContent=timeLeft; timeBar.style.width="100%";
+            remainingPool = buildLevelPool(currentLevel);
+            levelStartScore=score; const demoInPool=remainingPool.filter(p=>p.demo).length;
+            const levelMult=1+(currentLevel-1)*.10; requiredToPass=Math.ceil(.9*demoInPool*10*DIFF.scoreMult*levelMult);
+            updateLevelScoreHUD(); streak=0; updateComboBadge();
+            isPlaying=true; gameInterval=setInterval(spawnTarget,DIFF.spawn); timerInterval=setInterval(updateTimer,1000);
+          }
+        });
+        document.getElementById("closeModal").onclick = () => { modalOverlay.style.display="none"; endGame(); };
+        return;
+      }
+
+      currentLevel++;
+      if (currentLevel>maxLevels) { showWinner(); return; }
+
+      const nextSetup=()=>{
+        gameArea.innerHTML=""; timeLeft=DIFF.time; timeDisplay.textContent=timeLeft; timeBar.style.width="100%";
+        remainingPool = buildLevelPool(currentLevel);
+        levelStartScore=score; const demoInNext=remainingPool.filter(p=>p.demo).length;
+        const levelMultNext=1+(currentLevel-1)*.10; requiredToPass=Math.ceil(.9*demoInNext*10*DIFF.scoreMult*levelMultNext);
+        updateLevelScoreHUD();
+        isPlaying=true; gameInterval=setInterval(spawnTarget,DIFF.spawn); timerInterval=setInterval(updateTimer,1000);
+      };
+
+      showPauseModal({ title:`Level ${currentLevel}`, message:`Difficulty scaling applied. Good luck!`, actionText:"Start level", onAction:nextSetup });
+    }
+
+    function showWinner() {
+      isPlaying=false; clearInterval(gameInterval); clearInterval(timerInterval);
+      const titleEl = modalOverlay.querySelector("h3"); titleEl.textContent="🎉 You beat all levels! 🎉";
+      rankingList.innerHTML = `
+        <li style="list-style:none; margin:0 0 8px 0; font-weight:bold; color:#4CAF50;">
+          Congratulations, ${escapeHtml(playerName)}! You completed all ${maxLevels} levels.
+        </li>`;
+      playAgainBtn.textContent="See leaderboard";
+      playAgainBtn.onclick=()=>{ modalOverlay.style.display="none"; endGame(); };
+      closeModal.onclick=()=> modalOverlay.style.display="none";
+      modalOverlay.style.display="flex";
+    }
+
+    // === ALTERADO: agora é async e usa Supabase ===
+    async function endGame() {
+      isPlaying=false; clearInterval(gameInterval); clearInterval(timerInterval);
+
+      // segurança
+      const earnedThisLevel = score - levelStartScore;
+      if (perLevelScores.length===0 || perLevelScores.reduce((a,b)=>a+b,0)+earnedThisLevel===score) {
+        if (earnedThisLevel!==0 && perLevelScores[perLevelScores.length-1]!==earnedThisLevel) {
+          perLevelScores.push(earnedThisLevel);
+        }
+      }
+
+      const total = perLevelScores.reduce((a,b)=>a+b,0);
+
+      // salva no Supabase e atualiza listas
+      const inserted = await saveRankingEntry(playerName || "Player", total);
+      try {
+        const top = await loadRankingEntries(10);
+        renderList(rankingList, top, inserted?.id);  // modal
+      } catch (e) {
+        console.error(e);
+        rankingList.innerHTML = '<li style="list-style:none;color:#b00">Could not load scores</li>';
+      }
+      await refreshHallOfFame(); // Hall of Fame na parte de baixo
+
+      // mostra modal padrão
+      const titleEl = modalOverlay.querySelector("h3");
+      titleEl.textContent = "🏆 Leaderboard 🏆";
+      playAgainBtn.textContent = "Play again";
+      playAgainBtn.onclick = () => { modalOverlay.style.display = "none"; startGame(); };
+      closeModal.onclick = () => { modalOverlay.style.display = "none"; };
+      modalOverlay.style.display = "flex";
+    }
+  </script>
 </body>
 </html>
