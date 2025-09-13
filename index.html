@@ -632,7 +632,7 @@ welcomeStartBtn.addEventListener("click", () => {
       const el = document.getElementById(soundId);
       if (!el) return;
       el.currentTime = 0;
-      el.volume = 0.25;
+      el.volume = 0.7;
       el.play().catch(()=>{});
     }
     muteBtn.addEventListener("click", ()=>{
@@ -1097,6 +1097,7 @@ function endGame() {
   </script>
 </body>
 </html>
+
 
 
 
