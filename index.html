@@ -399,8 +399,9 @@ body.hard .target img:hover {
     <label><input type="checkbox" id="introDontShow"> Don’t show this again</label>
     <button id="introStartBtn">Got it — let’s play</button>
   </div>
+ </div>
 </div>
-  <!-- Player form -->
+  !-- Player form -->
   <div id="playerForm">
     <label>Your Name:</label>
     <input type="text" id="playerName" placeholder="Type your name" />
@@ -544,7 +545,8 @@ body.hard .target img:hover {
   { name: "Addigy", demo: true, logo: "images/addigy.jpg" },
   { name: "Acronis", demo: true, logo: "images/acronis.jpg" }
       ];
-
+// Som desativado – função vazia para não dar erro
+function play() {}
     // Color palette (cyclic)
     const colors = [
       "#FF6B6B", "#FFD93D", "#6BCB77", "#4D96FF",
@@ -631,14 +633,6 @@ document.addEventListener("DOMContentLoaded", () => {
 welcomeStartBtn.addEventListener("click", () => {
   welcomeOverlay.style.display = "none";
   introOverlay.style.display   = "flex";
-});
-// Garante que o contexto ative no primeiro clique do usuário
-document.addEventListener("click", () => {
-  if (audioCtx.state === "suspended") audioCtx.resume();
-}, { once: true });
-
-   document.addEventListener("keydown",(e)=>{
-  if (e.key.toLowerCase()==="m") muteBtn.click();
 });
 
     // Persistence
@@ -1087,6 +1081,7 @@ function endGame() {
   </script>
 </body>
 </html>
+
 
 
 
