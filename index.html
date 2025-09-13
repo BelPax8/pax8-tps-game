@@ -454,6 +454,30 @@ body.hard .target img:hover {
     <h3>🏆 Hall of Fame 🏆</h3>
     <ol id="rankingListPersist"></ol>
   </div>
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js";
+
+  // 🔧 COLE AQUI OS DADOS DO SEU PROJETO
+  const SUPABASE_URL = "https://SEU-PROJETO.supabase.co";
+  const SUPABASE_KEY = "SUA-ANON-PUBLIC-KEY";
+  export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // Função para salvar pontuação
+  window.saveRankingEntry = async (name, points) => {
+    await supabase.from("ranking").insert([{ name, points }]);
+  };
+
+  // Função para buscar ranking (top 10)
+  window.loadRankingEntries = async () => {
+    const { data, error } = await supabase
+      .from("ranking")
+      .select("*")
+      .order("points", { ascending: false })
+      .limit(10);
+
+    return data || [];
+  };
+</script>
 
   <script>
     // === Products (full list) ===
@@ -1080,6 +1104,7 @@ function endGame() {
   </script>
 </body>
 </html>
+
 
 
 
