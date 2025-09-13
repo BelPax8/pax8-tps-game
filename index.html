@@ -1080,12 +1080,13 @@ function endGame() {
   const total = perLevelScores.reduce((a, b) => a + b, 0);
 
   // grava no ranking com o NOME do jogador
-  ranking.forEach(r => r.last = false);
-  ranking.push({ name: playerName || "Player", points: total, last: true });
-  ranking.sort((a, b) => b.points - a.points);
-
-  saveRanking();
-  renderRankingLists();
+  (async () => {
+  await saveRankingEntry(playerName || "Player", total);
+  const rankingData = await loadRankingEntries();
+  rankingList.innerHTML = rankingData
+    .map((r, i) => `<li>${i+1}. ${r.name} — ${r.points} pts</li>`)
+    .join("");
+})();
 
   const titleEl = modalOverlay.querySelector("h3");
   titleEl.textContent = "🏆 Leaderboard 🏆";
@@ -1104,6 +1105,7 @@ function endGame() {
   </script>
 </body>
 </html>
+
 
 
 
