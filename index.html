@@ -655,43 +655,6 @@ welcomeStartBtn.addEventListener("click", () => {
   welcomeOverlay.style.display = "none";
   introOverlay.style.display   = "flex";
 });
-
-    // Persistence
-    const LS_KEY = "se_pax8_game_ranking";
-    function loadRanking() {
-      try { const raw = localStorage.getItem(LS_KEY); return raw ? JSON.parse(raw) : []; }
-      catch { return []; }
-    }
-    function saveRanking() {
-      try { localStorage.setItem(LS_KEY, JSON.stringify(ranking)); }
-      catch {}
-    }
-
-    // Load persisted ranking on boot
-    ranking = loadRanking();
-    renderRankingLists();
-function renderRankingLists() {
-  // Modal (usado quando o jogo termina)
-  if (rankingList) {
-    rankingList.innerHTML = ranking
-      .map((r, i) => {
-        const you = r.last ? ' class="highlight"' : '';
-        return `<li${you}>${i + 1}. ${r.name} — ${r.points} pts</li>`;
-      })
-      .join("");
-  }
-
-  // Hall of Fame (persistente)
-  if (rankingListPersist) {
-    rankingListPersist.innerHTML = ranking
-      .map((r, i) => {
-        const you = r.last ? ' class="highlight"' : '';
-        return `<li${you}>${i + 1}. ${r.name} — ${r.points} pts</li>`;
-      })
-      .join("");
-  }
-}
-
     // Show intro on first load unless user opted out
  (function showIntroOnLoad() {
   try {
@@ -1060,7 +1023,6 @@ rankingList.innerHTML = `
   modalOverlay.style.display = "flex";
 }
 
-
 function endGame() {
   isPlaying = false;
   clearInterval(gameInterval);
@@ -1098,11 +1060,48 @@ function endGame() {
   modalOverlay.style.display = "flex";
 }
 
-
-
   </script>
+  <script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js";
+
+  // >>> SUA URL e CHAVE (as que você me passou)
+  const SUPABASE_URL = "https://jzvombwgckgjmizzhinc.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6dm9tYndnY2tnam1penpoaW5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NzQ2MjcsImV4cCI6MjA3MzM1MDYyN30.u57i3_aNLgBsx2ZmKQE2l4GvbBBviei4EF9UpXa86ds";
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // Helpers globais
+  window.saveRankingEntry = async (name, points) => {
+    const { error } = await supabase.from("ranking").insert([{ name, points }]);
+    if (error) throw error;
+  };
+
+  window.loadRankingEntries = async () => {
+    const { data, error } = await supabase
+      .from("ranking")
+      .select("*")
+      .order("points", { ascending: false })
+      .limit(10);
+    if (error) throw error;
+    return data || [];
+  };
+
+  // Carrega Hall of Fame ao abrir a página
+  document.addEventListener("DOMContentLoaded", async () => {
+    const hallList = document.getElementById("rankingListPersist");
+    try {
+      const top = await window.loadRankingEntries();
+      hallList.innerHTML = top.length
+        ? top.map((r, i) => `<li>${i+1}. ${r.name} — ${r.points} pts</li>`).join("")
+        : `<li style="list-style:none;opacity:.8">No scores yet</li>`;
+    } catch {
+      hallList.innerHTML = `<li style="list-style:none;opacity:.8">Could not load scores</li>`;
+    }
+  });
+</script>
 </body>
 </html>
+
 
 
 
