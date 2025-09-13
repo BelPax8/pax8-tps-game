@@ -414,10 +414,7 @@ body.hard .target img:hover {
   <div class="group">
     <span id="comboBadge">Streak: 0 | Combo: x1.00</span>
   </div>
-  <div class="group">
-    <button id="muteBtn">🔊 Sound</button>
-  </div>
-  <div class="group">
+   <div class="group">
     <strong>Target:</strong> <span id="targetReq">0</span>
     &nbsp;|&nbsp;
     <strong>This level:</strong> <span id="levelScore">0</span>
@@ -431,12 +428,6 @@ body.hard .target img:hover {
 
   <!-- Game area -->
   <div id="gameArea"></div>
-
-  <!-- Audio -->
-<audio id="sndHit" preload="auto" crossorigin="anonymous"
-  src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c7c2b1.mp3?filename=click-124467.mp3"></audio>
-<audio id="sndMiss" preload="auto" crossorigin="anonymous"
-  src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_6db2aa.mp3?filename=error-126627.mp3"></audio>
 
   <!-- Modal (Leaderboard) -->
   <div id="modalOverlay">
@@ -610,7 +601,6 @@ const vendorsNoDemo = products.filter(p => !p.demo);
     const rankingListPersist = document.getElementById("rankingListPersist");
     const closeModal = document.getElementById("closeModal");
     const playAgainBtn = document.getElementById("playAgainBtn");
-    const muteBtn = document.getElementById("muteBtn");
     const comboBadge = document.getElementById("comboBadge");
     const targetReqEl  = document.getElementById("targetReq");
     const levelScoreEl = document.getElementById("levelScore");
@@ -651,28 +641,7 @@ document.addEventListener("click", () => {
   if (audioCtx.state === "suspended") audioCtx.resume();
 }, { once: true });
 
-// Deixa o volume base no máximo
-hitEl.volume = 1.0;
-missEl.volume = 1.0;
-
-    /// Sound helpers
-let muted = false;
-function play(soundId) {
-  if (muted) return;
-  const el = document.getElementById(soundId);
-  if (!el) return;
-  el.currentTime = 0;
-  el.volume = 1.0; // máximo
-  el.play().catch(()=>{});
-}
-
-muteBtn.addEventListener("click", () => {
-  muted = !muted;
-  muteBtn.classList.toggle("muted", muted);
-  muteBtn.textContent = muted ? "🔇 Muted" : "🔊 Sound";
-});
-
-document.addEventListener("keydown",(e)=>{
+   document.addEventListener("keydown",(e)=>{
   if (e.key.toLowerCase()==="m") muteBtn.click();
 });
 
@@ -1122,6 +1091,7 @@ function endGame() {
   </script>
 </body>
 </html>
+
 
 
 
