@@ -655,7 +655,7 @@ document.addEventListener("click", () => {
 hitEl.volume = 1.0;
 missEl.volume = 1.0;
 
-    // Sound helpers
+    /// Sound helpers
 let muted = false;
 function play(soundId) {
   if (muted) return;
@@ -665,15 +665,16 @@ function play(soundId) {
   el.volume = 1.0; // máximo
   el.play().catch(()=>{});
 }
-muteBtn.addEventListener("click", ()=>{ ... });
 
-      muted = !muted;
-      muteBtn.classList.toggle("muted", muted);
-      muteBtn.textContent = muted ? "🔇 Muted" : "🔊 Sound";
-    });
-    document.addEventListener("keydown",(e)=>{
-      if (e.key.toLowerCase()==="m") muteBtn.click();
-    });
+muteBtn.addEventListener("click", () => {
+  muted = !muted;
+  muteBtn.classList.toggle("muted", muted);
+  muteBtn.textContent = muted ? "🔇 Muted" : "🔊 Sound";
+});
+
+document.addEventListener("keydown",(e)=>{
+  if (e.key.toLowerCase()==="m") muteBtn.click();
+});
 
     // Persistence
     const LS_KEY = "se_pax8_game_ranking";
@@ -980,49 +981,44 @@ function endLevel() {
   clearInterval(timerInterval);
 
   const earnedThisLevel = score - levelStartScore;
-
-  // >>> NOVO: registra a fase no histórico (mesmo se falhar)
   perLevelScores.push(earnedThisLevel);
 
-if (earnedThisLevel < requiredToPass) {
-  showPauseModal({
-    title: `Level ${currentLevel} failed`,
-    message: `You scored ${earnedThisLevel} pts but need ${requiredToPass} pts. Try again!`,
-    actionText: "Retry level",
-    onAction: () => {
-      gameArea.innerHTML = "";
+  if (earnedThisLevel < requiredToPass) {
+    showPauseModal({
+      title: `Level ${currentLevel} failed`,
+      message: `You scored ${earnedThisLevel} pts but need ${requiredToPass} pts. Try again!`,
+      actionText: "Retry level",
+      onAction: () => {
+        gameArea.innerHTML = "";
+        timeLeft = DIFF.time;
+        timeDisplay.textContent = timeLeft;
+        timeBar.style.width = "100%";
+        remainingPool = buildLevelPool(currentLevel);
 
-      timeLeft = DIFF.time;
-      timeDisplay.textContent = timeLeft;
-      timeBar.style.width = "100%";
-      remainingPool = buildLevelPool(currentLevel);
+        levelStartScore = score;
+        const demoInPool = remainingPool.filter(p => p.demo).length;
+        const levelMult = 1 + (currentLevel - 1) * 0.10;
+        requiredToPass = Math.ceil(0.9 * demoInPool * 10 * DIFF.scoreMult * levelMult);
+        updateLevelScoreHUD();
 
-      // ancora para a nova tentativa da MESMA fase
-      levelStartScore = score;
-      const demoInPool = remainingPool.filter(p => p.demo).length;
-      const levelMult = 1 + (currentLevel - 1) * 0.10;
-      requiredToPass = Math.ceil(0.9 * demoInPool * 10 * DIFF.scoreMult * levelMult);
-      updateLevelScoreHUD();
+        streak = 0;
+        updateComboBadge();
 
-      streak = 0;
-      updateComboBadge();
+        isPlaying = true;
+        clearInterval(gameInterval);
+        clearInterval(timerInterval);
+        gameInterval = setInterval(spawnTarget, DIFF.spawn);
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+    });
 
-      isPlaying = true;
-      clearInterval(gameInterval);
-      clearInterval(timerInterval);
-      gameInterval = setInterval(spawnTarget, DIFF.spawn);
-      timerInterval = setInterval(updateTimer, 1000);
-    }
-  });
+    document.getElementById("closeModal").onclick = () => {
+      modalOverlay.style.display = "none";
+      endGame(); // grava nome + total no ranking
+    };
+    return;
+  }
 
-  // 👇 INSIRA AQUI
-  document.getElementById("closeModal").onclick = () => {
-    modalOverlay.style.display = "none";
-    endGame(); // grava nome + total no ranking
-  };
-
-  return;
-}
   // PASSOU
   currentLevel++;
 
@@ -1033,13 +1029,11 @@ if (earnedThisLevel < requiredToPass) {
 
   const nextSetup = () => {
     gameArea.innerHTML = "";
-
     timeLeft = DIFF.time;
     timeDisplay.textContent = timeLeft;
     timeBar.style.width = "100%";
     remainingPool = buildLevelPool(currentLevel);
 
-    // ancora para a PRÓXIMA fase
     levelStartScore = score;
     const demoInNext = remainingPool.filter(p => p.demo).length;
     const levelMultNext = 1 + (currentLevel - 1) * 0.10;
@@ -1128,6 +1122,7 @@ function endGame() {
   </script>
 </body>
 </html>
+
 
 
 
