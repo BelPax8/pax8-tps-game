@@ -627,17 +627,46 @@ welcomeStartBtn.addEventListener("click", () => {
   welcomeOverlay.style.display = "none"; // esconde tela de boas-vindas
   introOverlay.style.display = "flex";   // mostra instruções
 });
+ // --- BOOST DE ÁUDIO (Web Audio API) ---
+const hitEl  = document.getElementById("sndHit");
+const missEl = document.getElementById("sndMiss");
+
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioCtx();
+
+// Cria uma única cadeia de áudio para cada <audio>
+const hitSrc  = audioCtx.createMediaElementSource(hitEl);
+const missSrc = audioCtx.createMediaElementSource(missEl);
+
+// Gain master (ajuste aqui o "super volume")
+const masterGain = audioCtx.createGain();
+masterGain.gain.value = 2.5; // 250% do volume normal
+
+hitSrc.connect(masterGain);
+missSrc.connect(masterGain);
+masterGain.connect(audioCtx.destination);
+
+// Garante que o contexto ative no primeiro clique do usuário
+document.addEventListener("click", () => {
+  if (audioCtx.state === "suspended") audioCtx.resume();
+}, { once: true });
+
+// Deixa o volume base no máximo
+hitEl.volume = 1.0;
+missEl.volume = 1.0;
+
     // Sound helpers
-    let muted = false;
-    function play(soundId) {
-      if (muted) return;
-      const el = document.getElementById(soundId);
-      if (!el) return;
-      el.currentTime = 0;
-      el.volume = 0.7;
-      el.play().catch(()=>{});
-    }
-    muteBtn.addEventListener("click", ()=>{
+let muted = false;
+function play(soundId) {
+  if (muted) return;
+  const el = document.getElementById(soundId);
+  if (!el) return;
+  el.currentTime = 0;
+  el.volume = 1.0; // máximo
+  el.play().catch(()=>{});
+}
+muteBtn.addEventListener("click", ()=>{ ... });
+
       muted = !muted;
       muteBtn.classList.toggle("muted", muted);
       muteBtn.textContent = muted ? "🔇 Muted" : "🔊 Sound";
@@ -1099,6 +1128,7 @@ function endGame() {
   </script>
 </body>
 </html>
+
 
 
 
