@@ -433,8 +433,10 @@ body.hard .target img:hover {
   <div id="gameArea"></div>
 
   <!-- Audio -->
-  <audio id="sndHit"  src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c7c2b1.mp3?filename=click-124467.mp3"></audio>
-  <audio id="sndMiss" src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_6db2aa.mp3?filename=error-126627.mp3"></audio>
+<audio id="sndHit" preload="auto" crossorigin="anonymous"
+  src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c7c2b1.mp3?filename=click-124467.mp3"></audio>
+<audio id="sndMiss" preload="auto" crossorigin="anonymous"
+  src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_6db2aa.mp3?filename=error-126627.mp3"></audio>
 
   <!-- Modal (Leaderboard) -->
   <div id="modalOverlay">
@@ -1097,6 +1099,7 @@ function endGame() {
   </script>
 </body>
 </html>
+
 
 
 
